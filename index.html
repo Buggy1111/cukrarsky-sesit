@@ -1,0 +1,1340 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Receptury, kalkulace ceny, alergeny a výživa pro cukráře.">
+<title>Cukrářský sešit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;0,800;1,500;1,600;1,700;1,800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* Tichý luxus: slonová kost, inkoust a zlatá linka. Vysoce kontrastní antikva pro názvy a čísla, lehké bezpatkové písmo na ovládání.
+   Žádné karty ani stíny, oddíly dělí jen tenká linka a vzduch. Na každé obrazovce jedno hlavní číslo: cena za kus.
+   Macaron barvy (pistácie, růže) jen jako jemné akcenty. Na PC dva sloupce: vlevo složení, vpravo živá kalkulace. */
+:root {
+  --bg: #f8f5ef;            /* slonová kost */
+  --bg-2: #f1ece3;
+  --surface: #fffdf9;
+  --ink: #1c1a17;           /* inkoust */
+  --muted: #7b7367;
+  --line: #e2d9c9;
+  --gold: #a47f48;          /* zlatá linka, cena, aktivní stav */
+  --gold-soft: #efe4cf;
+  --pistachio: #5f8059;     /* macaron: v pořádku */
+  --pistachio-soft: #e3ecdc;
+  --rose: #a14a60;          /* macaron: alergeny, smazat */
+  --rose-soft: #f4dde1;
+  --btn: #1c1a17; --btn-ink: #fbf7ef;
+  --wash: radial-gradient(700px 360px at 8% -8%, rgba(176,201,160,.28), transparent 70%), radial-gradient(640px 340px at 96% -6%, rgba(236,190,198,.30), transparent 70%);
+  --font-display: "Playfair Display", "Didot", "Bodoni 72", Georgia, "Times New Roman", serif;
+  --font-body: "Manrope", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-num: "Manrope", "Segoe UI", system-ui, sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #12100e; --bg-2: #1a1714; --surface: #1d1916; --ink: #f1eadf; --muted: #a39989; --line: #322c26; --gold: #d2ae72; --gold-soft: #2c2418;
+    --pistachio: #a9c9a0; --pistachio-soft: #1f2a1d; --rose: #ec96ab; --rose-soft: #35202a; --btn: #f1eadf; --btn-ink: #14110e;
+    --wash: radial-gradient(700px 360px at 8% -8%, rgba(120,150,110,.16), transparent 70%), radial-gradient(640px 340px at 96% -6%, rgba(200,130,150,.15), transparent 70%);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #12100e; --bg-2: #1a1714; --surface: #1d1916; --ink: #f1eadf; --muted: #a39989; --line: #322c26; --gold: #d2ae72; --gold-soft: #2c2418;
+  --pistachio: #a9c9a0; --pistachio-soft: #1f2a1d; --rose: #ec96ab; --rose-soft: #35202a; --btn: #f1eadf; --btn-ink: #14110e;
+  --wash: radial-gradient(700px 360px at 8% -8%, rgba(120,150,110,.16), transparent 70%), radial-gradient(640px 340px at 96% -6%, rgba(200,130,150,.15), transparent 70%);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg); background-image: var(--wash); background-repeat: no-repeat; color: var(--ink); font-family: var(--font-body); font-weight: 500; font-size: 15px; line-height: 1.55; padding-inline: 20px; padding-block: 0 72px; font-variant-numeric: lining-nums tabular-nums; -webkit-font-smoothing: antialiased; }
+h1, h2, h3 { font-family: var(--font-display); font-weight: 600; margin: 0; text-wrap: balance; }
+button, input, select, textarea { font: inherit; color: inherit; }
+.wrap { max-width: 1560px; margin-inline: auto; }
+.mono { font-family: var(--font-num); font-weight: 700; font-variant-numeric: lining-nums tabular-nums; }
+input[type="number"] { font-family: var(--font-num); font-weight: 700; font-variant-numeric: lining-nums tabular-nums; letter-spacing: .01em; }
+:focus-visible { outline: 1.5px solid var(--gold); outline-offset: 3px; border-radius: 2px; }
+
+/* hlavička */
+.mast { position: relative; text-align: center; padding-block: 34px 18px; }
+.mast .trio { display: flex; justify-content: center; gap: 0; margin-bottom: 14px; }
+.mast .trio i { width: 14px; height: 14px; border-radius: 50%; margin-inline: -2px; border: 1px solid var(--bg); }
+.mast .trio i:nth-child(1) { background: #b7cdae; } .mast .trio i:nth-child(2) { background: #ebc2cb; } .mast .trio i:nth-child(3) { background: #d8bd8a; }
+.mast h1 { font-size: clamp(30px, 4vw, 46px); line-height: 1.05; letter-spacing: 0; font-weight: 600; }
+.mast p { margin: 10px 0 0; font-size: 11.5px; letter-spacing: .32em; text-transform: uppercase; color: var(--muted); }
+.mast .theme { position: absolute; right: 0; top: 18px; }
+@media (max-width: 700px) { .mast { padding-block: 24px 14px; } .mast .theme { position: static; margin-top: 14px; } .tabs { justify-content: flex-start; gap: 22px; } }
+.bar-tools { position: absolute; right: 20px; top: 0; bottom: 0; display: flex; align-items: center; gap: 16px; }
+.searchbtn { border: 1px solid var(--line); background: transparent; padding: 6px 12px; font-size: 12px; color: var(--muted); cursor: pointer; display: flex; gap: 10px; align-items: center; }
+.searchbtn:hover { border-color: var(--gold); color: var(--ink); }
+kbd { font: 600 10.5px var(--font-body); border: 1px solid var(--line); padding: 1px 6px; color: var(--muted); }
+.saved { font-size: 12px; color: var(--muted); font-weight: 600; white-space: nowrap; }
+.saved.ok { color: var(--pistachio); }
+.saved.bad { color: var(--rose); }
+@media (max-width: 1100px) { .searchbtn kbd { display: none; } }
+@media (max-width: 860px) { .bar-tools { position: static; justify-content: space-between; padding-bottom: 8px; } }
+.bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: color-mix(in srgb, var(--bg) 90%, transparent); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); margin-inline: -20px; padding-inline: 20px; border-block: 1px solid var(--line); }
+.tabs { display: flex; justify-content: center; gap: clamp(18px, 4vw, 52px); overflow-x: auto; scrollbar-width: none; max-width: 1560px; margin-inline: auto; }
+.tabs::-webkit-scrollbar { display: none; }
+.tab { border: 0; background: none; padding: 15px 2px 13px; cursor: pointer; color: var(--muted); font-weight: 400; font-size: 12.5px; letter-spacing: .24em; text-transform: uppercase; border-bottom: 1px solid transparent; margin-bottom: -1px; white-space: nowrap; transition: color .2s; }
+.tab:hover { color: var(--ink); }
+.tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--gold); }
+
+main { padding-block: 36px; display: grid; gap: 28px; }
+.notice { font-size: 13.5px; color: var(--muted); font-style: italic; text-align: center; max-width: 760px; margin-inline: auto; }
+.notice b { font-style: normal; color: var(--ink); font-weight: 500; }
+.notice.warn { color: var(--rose); font-style: normal; text-align: left; border-left: 1px solid var(--rose); padding-left: 12px; max-width: none; }
+
+/* oddíly: žádné karty, jen linka a vzduch */
+.card { padding-top: 22px; border-top: 1px solid var(--line); }
+.card > h3, .sec-h { font-size: 12px; font-family: var(--font-body); font-weight: 500; letter-spacing: .26em; text-transform: uppercase; color: var(--gold); display: flex; align-items: center; gap: 14px; }
+.card > h3::after, .spread > h3::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+.spread > h3 { font-size: 12px; font-family: var(--font-body); font-weight: 500; letter-spacing: .26em; text-transform: uppercase; color: var(--gold); }
+.stack { display: grid; gap: 18px; }
+.row-flex { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.spread { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.muted { color: var(--muted); }
+.small { font-size: 13px; }
+
+/* ovládání */
+.btn { border: 1px solid var(--ink); background: transparent; border-radius: 0; padding: 11px 22px; cursor: pointer; font-weight: 400; font-size: 12.5px; letter-spacing: .2em; text-transform: uppercase; min-height: 42px; transition: background .2s, color .2s, border-color .2s; }
+.btn:hover { background: var(--ink); color: var(--bg); }
+.btn.primary { background: var(--btn); border-color: var(--btn); color: var(--btn-ink); }
+.btn.primary:hover { background: var(--gold); border-color: var(--gold); color: #fff; }
+.btn.danger { color: var(--rose); border-color: color-mix(in srgb, var(--rose) 55%, transparent); }
+.btn.danger:hover { background: var(--rose); color: #fff; border-color: var(--rose); }
+.btn.danger.armed { background: var(--rose); color: #fff; border-color: var(--rose); }
+.btn.small { min-height: 32px; padding: 5px 14px; font-size: 11.5px; }
+.btn[disabled] { opacity: .35; cursor: not-allowed; pointer-events: none; }
+.icon { border: 0; background: none; cursor: pointer; color: var(--muted); font-size: 20px; line-height: 1; padding: 6px 10px; transition: color .2s; }
+.icon:hover { color: var(--rose); }
+.field { display: grid; gap: 4px; min-width: 0; }
+.field > span { font-size: 11px; color: var(--muted); font-weight: 600; letter-spacing: .18em; text-transform: uppercase; }
+.in, select.in, textarea.in { width: 100%; min-width: 0; border: 0; border-bottom: 1px solid color-mix(in srgb, var(--gold) 60%, var(--line)); background: color-mix(in srgb, var(--gold-soft) 62%, transparent); border-radius: 0; padding: 8px 9px; min-height: 40px; transition: border-color .2s, background .2s; }
+select.in { appearance: none; -webkit-appearance: none; background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%); background-position: calc(100% - 9px) 50%, calc(100% - 4px) 50%; background-size: 5px 5px; background-repeat: no-repeat; padding-right: 20px; cursor: pointer; }
+textarea.in { border: 1px solid color-mix(in srgb, var(--gold) 40%, var(--line)); padding: 14px 16px; min-height: 180px; resize: vertical; line-height: 1.7; }
+textarea.in[readonly] { background: transparent; border-color: var(--line); }
+.in:hover { border-color: var(--muted); }
+.in:focus { border-color: var(--gold); outline: none; }
+.in.title { background: transparent; font-family: var(--font-display); font-weight: 600; font-size: clamp(32px, 4.4vw, 54px); line-height: 1.1; padding: 4px 0 8px; border-bottom-color: transparent; min-height: 0; letter-spacing: -.005em; }
+.in.title:hover { border-bottom-color: var(--line); }
+.in.title:focus { border-bottom-color: var(--gold); }
+input[type="number"] { -moz-appearance: textfield; }
+.pill { display: inline-block; font-size: 10.5px; font-weight: 500; letter-spacing: .16em; text-transform: uppercase; color: var(--gold); border: 1px solid color-mix(in srgb, var(--gold) 50%, transparent); padding: 1px 9px; }
+.pill.amber { color: var(--gold); }
+.pill.berry { color: var(--rose); border-color: color-mix(in srgb, var(--rose) 45%, transparent); text-transform: none; letter-spacing: .02em; font-size: 12px; }
+.grid2 { display: grid; gap: 22px; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
+
+/* seznam receptur jako obsah knihy */
+.split { display: grid; gap: 34px; }
+@media (min-width: 900px) { .split { grid-template-columns: 270px minmax(0, 1fr); align-items: start; gap: 56px; } .list-col { position: sticky; top: 76px; max-height: calc(100vh - 100px); overflow-y: auto; padding-right: 6px; } }
+.list { display: grid; gap: 0; }
+.rcard { display: grid; gap: 3px; width: 100%; text-align: left; border: 0; border-top: 1px solid var(--line); background: transparent; padding: 16px 4px 16px 14px; cursor: pointer; position: relative; transition: background .2s; }
+.rcard:last-child { border-bottom: 1px solid var(--line); }
+.rcard:hover { background: color-mix(in srgb, var(--gold-soft) 55%, transparent); }
+.rcard[aria-current="true"]::before { content: ""; position: absolute; left: 0; top: 14px; bottom: 14px; width: 1px; background: var(--gold); }
+.rcard[aria-current="true"] b { color: var(--gold); }
+.rcard b { font-family: var(--font-display); font-weight: 600; font-size: 20px; line-height: 1.2; }
+.rcard .meta { display: flex; gap: 4px 14px; flex-wrap: wrap; font-size: 13px; color: var(--muted); align-items: center; }
+
+/* hlavní číslo */
+.sumbar { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 20px 32px; padding-block: 22px 8px; }
+.sumbar small { display: block; color: var(--muted); font-size: 11px; font-weight: 600; letter-spacing: .18em; text-transform: uppercase; margin-bottom: 2px; }
+.sumbar strong { font-family: var(--font-display); font-weight: 700; font-size: 30px; line-height: 1.15; font-variant-numeric: lining-nums tabular-nums; }
+.sumbar .hl { grid-column: span 2; }
+.sumbar .hl strong { color: var(--gold); font-style: italic; font-size: clamp(56px, 7vw, 92px); line-height: 1; font-weight: 800; letter-spacing: -.01em; }
+@media (max-width: 560px) { .sumbar .hl { grid-column: 1 / -1; } }
+
+.subtabs { display: flex; gap: 22px; flex-wrap: wrap; border-bottom: 1px solid var(--line); }
+.sub { border: 0; background: none; padding: 10px 0 12px; cursor: pointer; font-size: 12px; letter-spacing: .22em; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid transparent; margin-bottom: -1px; }
+.sub:hover { color: var(--ink); }
+.sub[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--gold); }
+
+/* editor */
+.egrid { display: grid; gap: 34px; }
+.col { display: grid; gap: 34px; align-content: start; min-width: 0; }
+.sec { display: grid; gap: 34px; min-width: 0; }
+@media (max-width: 1199px) {
+  .editor:not([data-sub="compose"]) .sec[data-sec="compose"], .editor:not([data-sub="steps"]) .sec[data-sec="steps"],
+  .editor:not([data-sub="calc"]) .sec[data-sec="calc"], .editor:not([data-sub="alg"]) .sec[data-sec="alg"] { display: none; }
+}
+@media (min-width: 1200px) {
+  .editor .subtabs { display: none; }
+  .egrid { grid-template-columns: minmax(0, 1.28fr) minmax(0, 1fr); align-items: start; gap: 64px; }
+  .colR { position: sticky; top: 120px; }
+}
+.irow { display: grid; grid-template-columns: minmax(0, 1fr) 124px 40px; gap: 2px 12px; align-items: center; padding-block: 10px; border-bottom: 1px solid var(--line); }
+.irow .nums { grid-column: 1 / -1; grid-row: 2; display: flex; gap: 4px 16px; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
+.irow .nums span:empty { display: none; }
+.irow .icon { grid-column: 3; grid-row: 1; }
+.irow select.in { font-size: 16px; }
+.irow .in { min-height: 38px; }
+
+.qty { display: flex; align-items: center; gap: 6px; }
+.qty .in { text-align: right; }
+.in.need { border-bottom-color: var(--rose); background: color-mix(in srgb, var(--rose-soft) 75%, transparent); }
+.in.need::placeholder { color: var(--rose); font-weight: 600; opacity: .85; }
+.legend { display: flex; gap: 8px 22px; flex-wrap: wrap; font-size: 12.5px; color: var(--muted); align-items: center; }
+.legend i { display: inline-block; width: 34px; height: 15px; vertical-align: -3px; margin-right: 8px; }
+.lg-in { background: color-mix(in srgb, var(--gold-soft) 62%, transparent); border-bottom: 1px solid color-mix(in srgb, var(--gold) 60%, var(--line)); }
+.lg-out { border-bottom: 1px dotted var(--muted); }
+.lg-need { background: color-mix(in srgb, var(--rose-soft) 75%, transparent); border-bottom: 1px solid var(--rose); }
+.qty .unit { color: var(--muted); font-size: 13px; font-weight: 600; width: 24px; }
+@media (min-width: 720px) {
+  .irow { grid-template-columns: minmax(150px, 1fr) 118px 100px 40px; gap: 0 14px; }
+  .irow .nums { display: contents; }
+  .irow > select { grid-column: 1; grid-row: 1; }
+  .irow > .qty { grid-column: 2; grid-row: 1; }
+  .irow .nums .net { display: none; }
+  .irow .nums span[data-out^="gross"] { grid-column: 1; grid-row: 2; font-size: 12.5px; padding-left: 2px; }
+  .irow .nums .costcell { grid-column: 3; grid-row: 1; text-align: right; color: var(--ink); font-size: 16px; font-weight: 700; font-family: var(--font-num); }
+  .irow .icon { grid-column: 4; grid-row: 1; }
+  .heads { display: grid; grid-template-columns: minmax(150px, 1fr) 118px 100px 40px; gap: 14px; font-size: 10.5px; font-weight: 600; letter-spacing: .18em; text-transform: uppercase; color: var(--muted); padding-bottom: 8px; border-bottom: 1px solid var(--ink); }
+  .heads span:nth-child(3) { text-align: right; } .heads span:nth-child(2) { text-align: right; padding-right: 30px; }
+}
+@media (max-width: 719px) { .heads { display: none; } .irow .nums span::before { content: attr(data-l) " "; opacity: .75; } }
+
+/* kalkulace */
+.tbl { width: 100%; border-collapse: collapse; }
+.tbl td { padding: 13px 4px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+.tbl td:last-child { text-align: right; white-space: nowrap; font-size: 16px; font-family: var(--font-num); font-weight: 700; font-variant-numeric: lining-nums tabular-nums; }
+.tbl .total td { font-weight: 800; border-bottom-color: var(--ink); }
+.tbl .big td { font-family: var(--font-display); font-size: 28px; font-weight: 800; color: var(--gold); border-bottom: 0; padding-block: 22px 8px; }
+.tbl .big td:first-child { font-family: var(--font-body); font-size: 11px; letter-spacing: .22em; text-transform: uppercase; color: var(--muted); }
+.tbl .param { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.tbl .param .in { width: 68px; padding: 3px 2px; min-height: 32px; text-align: right; border-bottom-color: var(--muted); }
+.scroll { overflow-x: auto; }
+.stepbar { position: sticky; top: calc(49px + env(safe-area-inset-top, 0px)); z-index: 4; display: flex; align-items: center; gap: 4px 22px; flex-wrap: wrap; background: color-mix(in srgb, var(--bg) 93%, transparent); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); padding: 6px 0; }
+.step { border: 0; background: none; display: flex; align-items: center; gap: 9px; padding: 7px 2px; cursor: pointer; color: var(--muted); font-size: 13px; font-weight: 600; border-bottom: 1px solid transparent; }
+.step:hover { color: var(--ink); }
+.step[aria-current="true"] { color: var(--ink); border-bottom-color: var(--gold); }
+.step .sn { width: 24px; height: 24px; border-radius: 50%; border: 1px solid currentColor; display: grid; place-items: center; font: 700 13px/1 var(--font-display); flex: none; }
+.step.done .sn { background: var(--pistachio); border-color: var(--pistachio); color: #fff; }
+.sb-sum { margin-left: auto; display: flex; gap: 14px; align-items: baseline; min-width: 0; }
+.sb-sum .nm { font-family: var(--font-display); font-weight: 600; font-size: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 28vw; }
+.sb-sum .pr { font-family: var(--font-display); font-style: italic; font-weight: 800; font-size: 23px; color: var(--gold); white-space: nowrap; }
+@media (max-width: 760px) { .step .sl { display: none; } .step[aria-current="true"] .sl { display: inline; } .sb-sum .nm { display: none; } .stepbar { gap: 4px 10px; } }
+.figure { padding-block: 4px; }
+.figure .lab { font-size: 11px; font-weight: 600; letter-spacing: .18em; text-transform: uppercase; color: var(--muted); }
+.figure .val { font-family: var(--font-display); font-weight: 700; font-size: 34px; line-height: 1.15; margin-top: 2px; }
+.figure.gold .val { color: var(--gold); font-style: italic; font-size: 46px; font-weight: 800; }
+
+/* alergeny */
+.alg { display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: 0 18px; }
+.chip { display: flex; align-items: center; gap: 10px; border: 0; border-bottom: 1px solid var(--line); padding: 9px 2px; font-size: 14px; background: transparent; color: var(--muted); }
+.chip b { font-family: var(--font-num); font-weight: 800; width: 22px; font-size: 14px; }
+.chip.on { color: var(--ink); }
+.chip.on b { color: var(--rose); }
+.chip.on::after { content: ""; margin-left: auto; width: 7px; height: 7px; border-radius: 50%; background: var(--rose); }
+label.chip { cursor: pointer; }
+label.chip input { accent-color: var(--rose); }
+.label-text { font-family: var(--font-display); font-style: italic; font-weight: 500; font-size: 20px; line-height: 1.45; padding: 4px 0 4px 18px; border-left: 1px solid var(--rose); }
+.label-text b { font-style: normal; font-weight: 500; }
+.mini-table { width: 100%; border-collapse: collapse; font-size: 15px; }
+.mini-table td:not(:first-child) { font-family: var(--font-num); font-weight: 700; font-variant-numeric: lining-nums tabular-nums; }
+.mini-table td, .mini-table th { padding: 9px 4px; border-bottom: 1px solid var(--line); text-align: right; }
+.mini-table td:first-child, .mini-table th:first-child { text-align: left; }
+.mini-table th { color: var(--muted); font-size: 10.5px; font-weight: 600; letter-spacing: .18em; text-transform: uppercase; border-bottom-color: var(--ink); }
+
+.nh { font-family: var(--font-display); font-weight: 700; font-size: 20px; letter-spacing: 0; text-transform: none; color: var(--ink); border: 1px solid var(--gold); width: 34px; height: 34px; display: inline-grid; place-items: center; border-radius: 50%; margin-right: 12px; flex: none; }
+.linkbtn { border: 0; background: none; color: var(--gold); cursor: pointer; padding: 4px 0; font-size: 12.5px; letter-spacing: .14em; text-transform: uppercase; text-align: left; border-bottom: 1px solid transparent; }
+.linkbtn:hover { border-bottom-color: var(--gold); }
+.next { display: flex; justify-content: flex-end; padding-top: 4px; }
+.checks { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 0 32px; }
+.checks li { border-bottom: 1px solid var(--line); }
+.checks li .linkbtn { display: block; width: 100%; padding: 10px 0; color: var(--rose); text-transform: none; letter-spacing: 0; font-size: 14.5px; border: 0; }
+.checks li .linkbtn:hover { text-decoration: underline; }
+.checks li.ok .linkbtn { color: var(--muted); cursor: default; }
+.checks li.ok .linkbtn:hover { text-decoration: none; }
+.checks .tick { display: inline-block; width: 22px; }
+.checks li.ok .tick { color: var(--pistachio); }
+.readyline { font-family: var(--font-display); font-style: italic; font-weight: 600; font-size: 22px; color: var(--pistachio); }
+.pill.ok { color: var(--pistachio); border-color: color-mix(in srgb, var(--pistachio) 55%, transparent); }
+.costcell { text-align: right; }
+.costcell .linkbtn { display: block; margin-left: auto; font-size: 11px; color: var(--rose); }
+.welcome { border-block: 1px solid var(--line); padding-block: 28px; display: grid; gap: 24px; }
+.welcome h2 { font-size: 28px; text-align: center; }
+.welcome ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 22px 40px; }
+.welcome li { display: grid; gap: 4px; align-content: start; }
+.welcome li .n { font-family: var(--font-display); font-style: italic; font-weight: 800; font-size: 44px; line-height: 1; color: var(--gold); }
+.welcome li b { font-weight: 500; letter-spacing: .16em; text-transform: uppercase; font-size: 12px; }
+.welcome li .d { color: var(--muted); font-size: 14px; }
+.welcome .row-flex { justify-content: center; }
+.return { display: flex; gap: 14px; align-items: center; justify-content: space-between; flex-wrap: wrap; border-left: 1px solid var(--gold); padding: 6px 0 6px 16px; }
+.page-h { font-size: clamp(28px, 3.2vw, 38px); }
+.sec-h { font-size: 11px; font-weight: 500; letter-spacing: .24em; text-transform: uppercase; color: var(--muted); }
+.footnote { text-align: center; font-size: 12.5px; color: var(--muted); }
+.footnote .linkbtn { font-size: 12.5px; letter-spacing: 0; text-transform: none; text-decoration: underline; color: var(--muted); display: inline; }
+.sec, .card, h3 { scroll-margin-top: 140px; }
+.tip { position: fixed; z-index: 60; max-width: 320px; background: var(--ink); color: var(--bg); padding: 10px 14px; font-size: 13px; line-height: 1.5; font-weight: 500; letter-spacing: 0; text-transform: none; border-radius: 6px; box-shadow: 0 12px 32px rgba(0,0,0,.28); pointer-events: none; }
+.tipi { display: inline-grid; place-items: center; width: 17px; height: 17px; margin-left: 8px; border: 1px solid var(--muted); border-radius: 50%; background: none; color: var(--muted); font: italic 600 11px/1 var(--font-display); letter-spacing: 0; text-transform: none; cursor: help; padding: 0; vertical-align: 1px; }
+.tipi:hover, .tipi:focus-visible { color: var(--gold); border-color: var(--gold); }
+.sheet { background: var(--surface); border: 1px solid var(--line); padding: 28px 30px; display: grid; gap: 16px; font-size: 14px; }
+.sheet header { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; align-items: end; border-bottom: 1px solid var(--ink); padding-bottom: 12px; }
+.sheet header small { display: block; font-size: 10.5px; letter-spacing: .24em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.sheet h4 { font-family: var(--font-display); font-weight: 600; font-size: 26px; margin: 2px 0 0; }
+.sheet .right { text-align: right; color: var(--muted); font-size: 13px; }
+.sheet table { width: 100%; border-collapse: collapse; }
+.sheet th { font-size: 10.5px; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); text-align: right; padding: 4px 4px 6px; border-bottom: 1px solid var(--line); }
+.sheet th:first-child, .sheet td:first-child { text-align: left; }
+.sheet td { padding: 6px 4px; border-bottom: 1px solid var(--line); text-align: right; font-family: var(--font-num); font-weight: 700; font-variant-numeric: lining-nums tabular-nums; }
+.sheet td:first-child { font-weight: 500; font-family: var(--font-body); }
+.sheet .sum td { border-bottom: 0; padding: 3px 4px; } .sheet .sum td:first-child { color: var(--muted); font-weight: 500; }
+.sheet .sum .big td { font-family: var(--font-display); font-size: 22px; font-weight: 800; color: var(--gold); padding-top: 10px; }
+.sheet p { margin: 0; } .sheet .steps-txt { white-space: pre-line; }
+#overlay .modal-back { position: fixed; inset: 0; z-index: 70; background: rgba(15,12,10,.5); display: flex; justify-content: center; align-items: flex-start; padding: 12vh 16px 16px; }
+.modal { width: min(660px, 100%); max-height: 74vh; overflow: auto; background: var(--surface); border: 1px solid var(--line); padding: 20px; box-shadow: 0 30px 80px rgba(0,0,0,.35); }
+.pal .in { font-size: 17px; min-height: 48px; }
+.pal-list { list-style: none; margin: 10px 0 0; padding: 0; }
+.pal-list li { display: flex; justify-content: space-between; gap: 14px; padding: 11px 12px; cursor: pointer; border-bottom: 1px solid var(--line); }
+.pal-list li small { color: var(--muted); font-size: 11px; letter-spacing: .16em; text-transform: uppercase; font-weight: 600; align-self: center; }
+.pal-list li[aria-selected="true"] { background: var(--gold-soft); }
+.pal-list li b { font-family: var(--font-display); font-weight: 600; font-size: 17px; }
+.gloss { display: grid; gap: 0; margin: 0; }
+.gloss dt { font-family: var(--font-display); font-weight: 600; font-size: 19px; padding-top: 16px; }
+.gloss dd { margin: 4px 0 0; padding-bottom: 14px; border-bottom: 1px solid var(--line); color: var(--ink); max-width: 720px; }
+.keys { width: 100%; border-collapse: collapse; }
+.keys td { padding: 9px 4px; border-bottom: 1px solid var(--line); }
+.keys td:first-child { width: 190px; white-space: nowrap; }
+#tour .tour-ring { position: fixed; z-index: 79; border: 2px solid var(--gold); border-radius: 6px; box-shadow: 0 0 0 9999px rgba(15,12,10,.5); pointer-events: none; transition: left .25s, top .25s, width .25s, height .25s; }
+#tour .tour-card { position: fixed; z-index: 80; width: min(340px, calc(100vw - 24px)); background: var(--surface); border: 1px solid var(--gold); padding: 16px 18px; box-shadow: 0 20px 50px rgba(0,0,0,.35); display: grid; gap: 10px; }
+#tour .tour-card p { margin: 0; font-size: 15px; line-height: 1.5; }
+#tour .tour-n { font-size: 11px; letter-spacing: .2em; text-transform: uppercase; color: var(--gold); font-weight: 700; }
+@media print {
+  body > *:not(.wrap), .wrap > header, .wrap > .bar { display: none !important; }
+  .stepbar, .egrid .sec:not([data-sec="steps"]) { display: none !important; }
+  .sheet { border: 0; padding: 0; }
+  .editor > .stack, .editor .card > :not(.sheet):not(h3):not(.sec-h) { display: none; }
+}
+.toast-btn { background: none; border: 0; color: inherit; font: inherit; letter-spacing: inherit; text-transform: inherit; margin-left: 16px; cursor: pointer; text-decoration: underline; }
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(24px + env(safe-area-inset-bottom, 0px)); background: var(--ink); color: var(--bg); padding: 11px 24px; font-size: 12px; letter-spacing: .16em; text-transform: uppercase; z-index: 20; }
+details > summary { cursor: pointer; font-size: 12px; letter-spacing: .18em; text-transform: uppercase; color: var(--gold); }
+.empty { text-align: center; padding: 36px 12px; color: var(--muted); font-style: italic; }
+@media (prefers-reduced-motion: no-preference) { .toast { animation: pop .25s ease-out; } @keyframes pop { from { opacity: 0; transform: translate(-50%, 8px); } } }
+@media print {
+  :root { --bg: #fff; --bg-2: #fff; --surface: #fff; --ink: #000; --muted: #444; --line: #bbb; --gold: #6b4a1e; --rose: #8a1f43; --wash: none; color-scheme: light; }
+  body { background: #fff; background-image: none; padding: 0; }
+  .mast, .bar, .subtabs, .list-col, .btn, .icon, .notice, .toast, details { display: none !important; }
+  .split, .egrid { display: block; } .sec { display: grid !important; } .colR { position: static; }
+  .card { break-inside: avoid; } .in { border: 0; padding: 0; min-height: 0; } select.in { background-image: none; }
+}
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <header class="mast">
+    <div class="trio" aria-hidden="true"><i></i><i></i><i></i></div>
+    <h1>Cukrářský sešit</h1>
+    <p>receptury · kalkulace · alergeny</p>
+    <button class="btn small theme" id="theme" type="button" aria-label="Přepnout světlý a tmavý vzhled" title="Světlý / tmavý vzhled">Vzhled</button>
+  </header>
+  <div class="bar"><nav class="tabs" role="tablist" id="tabs"></nav>
+    <div class="bar-tools"><button type="button" class="searchbtn" id="open-pal" aria-label="Hledat v receptuře nebo surovině">Hledat <kbd>Ctrl K</kbd></button><span class="saved" id="saved">Ukládá se automaticky</span></div></div>
+  <main id="app"></main>
+</div>
+<div id="toast" class="toast" hidden></div>
+<div id="overlay" hidden></div>
+<div id="tour" hidden></div>
+
+<script>
+// ============================== LOGIC-START ==============================
+const ALLERGENS = [
+  [1, 'lepek', 'Obiloviny obsahující lepek'], [2, 'korýši', 'Korýši'], [3, 'vejce', 'Vejce'],
+  [4, 'ryby', 'Ryby'], [5, 'arašídy', 'Arašídy'], [6, 'sója', 'Sója'], [7, 'mléko', 'Mléko (vč. laktózy)'],
+  [8, 'ořechy', 'Skořápkové plody'], [9, 'celer', 'Celer'], [10, 'hořčice', 'Hořčice'],
+  [11, 'sezam', 'Sezam'], [12, 'siřičitany', 'Oxid siřičitý a siřičitany'], [13, 'vlčí bob', 'Vlčí bob'], [14, 'měkkýši', 'Měkkýši'],
+];
+const BASE_UNIT = { kg: 'g', l: 'ml', ks: 'ks' };
+/** Povinné výživové údaje podle nařízení EU 1169/2011 (vše na 100 g). */
+const NUTR = ['kcal', 'fat', 'sat', 'carb', 'sugar', 'fiber', 'prot', 'salt'];
+const NUTR_LABEL = { kcal: 'Energie', fat: 'Tuky', sat: 'z toho nasycené', carb: 'Sacharidy', sugar: 'z toho cukry', fiber: 'Vláknina', prot: 'Bílkoviny', salt: 'Sůl' };
+/** Má surovina vyplněnou výživu (nebo ji někdo výslovně potvrdil jako ověřenou)? */
+const hasNutri = (ing) => ing.check === true || ['kcal', 'fat', 'carb', 'prot', 'salt'].some((k) => num(ing[k]) > 0);
+
+const num = (v, d = 0) => { const n = typeof v === 'number' ? v : parseFloat(String(v).replace(',', '.')); return Number.isFinite(n) ? n : d; };
+
+/** Hmotnost v gramech (ml se bere 1:1, kus podle hmotnosti kusu). */
+function gramsOf(ing, qty) { return ing.base === 'ks' ? qty * num(ing.pieceG, 0) : qty; }
+
+/** Plná kalkulace jedné receptury. Množství se násobí `scale`. */
+function calcRecipe(r, ings) {
+  const k = num(r.scale, 1) || 1;
+  const byId = new Map(ings.map((i) => [i.id, i]));
+  const lines = [];
+  const alg = new Set();
+  let material = 0, netG = 0, missing = 0;
+  const N = Object.fromEntries(NUTR.map((k) => [k, 0]));
+  let unverified = 0, noNutri = [];
+  for (const it of r.items) {
+    const ing = byId.get(it.ingId);
+    if (!ing) { lines.push({ item: it, ing: null, net: 0, gross: 0, cost: 0, unit: '', missing: false }); if (it.ingId || num(it.qty) > 0) missing++; continue; }
+    const net = num(it.qty) * k;
+    const yieldPct = Math.min(100, Math.max(1, num(ing.yieldPct, 100)));
+    const gross = net / (yieldPct / 100);
+    const cost = ing.base === 'ks' ? gross * num(ing.price) : (gross / 1000) * num(ing.price);
+    if (!(num(ing.price) > 0)) missing++;
+    const g = gramsOf(ing, net);
+    netG += g;
+    for (const k of NUTR) N[k] += (g / 100) * num(ing[k]);
+    if (net > 0) { if (ing.check !== true) unverified++; if (!hasNutri(ing)) noNutri.push(ing); }
+    for (const a of ing.allergens || []) if (net > 0) alg.add(a);
+    material += cost;
+    lines.push({ item: it, ing, net, gross, cost, unit: BASE_UNIT[ing.base], missing: !(num(ing.price) > 0) });
+  }
+  const portions = Math.max(0.0001, num(r.portions, 1) * k);
+  const labor = (num(r.laborMin) * k / 60) * num(r.hourly);
+  const direct = material + labor;
+  const overhead = direct * (num(r.overheadPct) / 100);
+  const own = direct + overhead;
+  const vat = num(r.vatPct, 12) / 100;
+  const chosen = num(r.chosenPrice, 0); // zvolená prodejní cena za kus, s DPH
+  let net_price, marginPct;
+  if (chosen > 0) {
+    net_price = (chosen / (1 + vat)) * portions;
+    marginPct = net_price > 0 ? (1 - own / net_price) * 100 : 0;
+  } else {
+    marginPct = Math.min(95, Math.max(0, num(r.marginPct)));
+    net_price = own / (1 - marginPct / 100);
+  }
+  const gross_price = net_price * (1 + vat);
+  const finishedG = num(r.finishedG) > 0 ? num(r.finishedG) * k : netG;
+  const per100 = finishedG > 0 ? 100 / finishedG : 0;
+  const perPortion = 1 / portions;
+  return {
+    lines, material, labor, overhead, own, net_price, gross_price, vatAmount: gross_price - net_price, marginPct,
+    portions, costPerPortion: own * perPortion, pricePerPortion: gross_price * perPortion,
+    suggestedPerPortion: Math.ceil(gross_price * perPortion - 1e-9), netG, finishedG, missing,
+    allergens: [...alg].sort((a, b) => a - b),
+    nutri100: Object.fromEntries(NUTR.map((k) => [k, N[k] * per100])),
+    nutriPortion: Object.fromEntries(NUTR.map((k) => [k, N[k] * perPortion])),
+    unverified, noNutri,
+  };
+}
+
+/** Kontrolní seznam: co ještě chybí, aby byla receptura hotová. act = akce tlačítka. */
+function readiness(r, c) {
+  const usable = r.items.filter((i) => i.ingId && num(i.qty) > 0).length;
+  const noPriceLines = c.lines.filter((l) => l.ing && l.missing);
+  const noPrice = noPriceLines.map((l) => l.ing.name);
+  const noN = c.noNutri.map((i) => i.name);
+  return [
+    { key: 'items', ok: usable > 0, todo: 'Přidej do složení první suroviny', done: `Složení: ${usable} ${usable === 1 ? 'surovina' : usable < 5 ? 'suroviny' : 'surovin'}`, act: 'go', v: 'compose' },
+    { key: 'price', ok: usable > 0 && c.missing === 0, todo: noPrice.length ? `Doplň cenu: ${noPrice.slice(0, 2).join(', ')}${noPrice.length > 2 ? ` a další (${noPrice.length - 2})` : ''}` : 'Vyber surovinu u všech řádků', done: 'Všechny suroviny mají cenu', act: noPrice.length ? 'fixprice' : 'go', v: 'compose', ingId: noPriceLines[0]?.ing.id },
+    { key: 'nutri', ok: usable > 0 && noN.length === 0, todo: `Doplň výživové hodnoty: ${noN.slice(0, 2).join(', ')}${noN.length > 2 ? ` a další (${noN.length - 2})` : ''}`, done: 'Výživa je u všech surovin vyplněná', act: 'fixprice', v: 'compose', ingId: c.noNutri[0]?.id },
+    { key: 'labor', ok: num(r.laborMin) > 0 && num(r.hourly) > 0, todo: 'Zadej, kolik práce receptura zabere', done: `Práce: ${num(r.laborMin)} min`, act: 'go', v: 'calc' },
+    { key: 'steps', ok: String(r.steps || '').trim().length > 10, todo: 'Napiš technologický postup', done: 'Postup je vyplněný', act: 'go', v: 'steps' },
+  ];
+}
+
+/** Faktor přepočtu podle formy: kruh (průměr) nebo obdélník (a × b). */
+function formFactor(shape, from, to) {
+  if (shape === 'circle') { const a = num(from.a), b = num(to.a); return a > 0 && b > 0 ? (b / a) ** 2 : 0; }
+  const a1 = num(from.a) * num(from.b), a2 = num(to.a) * num(to.b);
+  return a1 > 0 && a2 > 0 ? a2 / a1 : 0;
+}
+
+const UNITS = {
+  g: ['mass', 1], dkg: ['mass', 10], kg: ['mass', 1000],
+  ml: ['vol', 1], cl: ['vol', 10], dl: ['vol', 100], l: ['vol', 1000],
+  'lžička (5 ml)': ['vol', 5], 'lžíce (15 ml)': ['vol', 15], 'hrnek (250 ml)': ['vol', 250],
+};
+function convertUnit(value, unit) {
+  const [fam, f] = UNITS[unit] || [];
+  if (!fam) return [];
+  const base = num(value) * f;
+  return Object.entries(UNITS).filter(([, v]) => v[0] === fam).map(([u, v]) => [u, base / v[1]]);
+}
+
+const vatSplit = (price, vatPct, withVat) => {
+  const v = 1 + num(vatPct) / 100;
+  return withVat ? { net: num(price) / v, gross: num(price) } : { net: num(price), gross: num(price) * v };
+};
+// =============================== LOGIC-END ===============================
+
+// ------------------------------ katalog surovin ------------------------------
+// Typické hodnoty na 100 g v pořadí NUTR (kcal, tuky, nasycené, sacharidy, cukry, vláknina, bílkoviny, sůl) podle běžných obalů
+// a tabulek složení potravin. Ceny jsou orientační. U konkrétního výrobku vždy ověř údaje na obalu.
+const C = (name, group, base, price, n, o = {}) => ({ name, group, base, price, pieceG: 0, yieldPct: 100, allergens: [], ...Object.fromEntries(NUTR.map((k, i) => [k, n[i]])), ...o });
+const CATALOG = [
+  C('Mouka hladká', 'Mouky a škroby', 'kg', 24, [348, 1.2, 0.2, 73, 0.5, 3, 10, 0.01], { allergens: [1] }),
+  C('Mouka polohrubá', 'Mouky a škroby', 'kg', 23, [348, 1.2, 0.2, 73, 0.5, 3, 10, 0.01], { allergens: [1] }),
+  C('Mouka celozrnná pšeničná', 'Mouky a škroby', 'kg', 35, [335, 2, 0.3, 62, 1.5, 11, 12, 0.02], { allergens: [1] }),
+  C('Mouka žitná', 'Mouky a škroby', 'kg', 30, [330, 1.5, 0.2, 66, 1, 13, 8, 0.01], { allergens: [1] }),
+  C('Mouka rýžová', 'Mouky a škroby', 'kg', 60, [360, 1.4, 0.4, 80, 0.1, 2.4, 6, 0.01]),
+  C('Škrob bramborový', 'Mouky a škroby', 'kg', 62, [340, 0.1, 0, 83, 0.1, 1, 0.1, 0.01]),
+  C('Škrob kukuřičný', 'Mouky a škroby', 'kg', 75, [350, 0.1, 0, 86, 0, 0.5, 0.3, 0.03]),
+  C('Cukr krystal', 'Cukry a sladidla', 'kg', 30, [400, 0, 0, 100, 100, 0, 0, 0]),
+  C('Cukr moučka', 'Cukry a sladidla', 'kg', 34, [400, 0, 0, 100, 100, 0, 0, 0]),
+  C('Cukr třtinový hnědý', 'Cukry a sladidla', 'kg', 55, [380, 0, 0, 98, 97, 0, 0.1, 0.03]),
+  C('Vanilkový cukr', 'Cukry a sladidla', 'kg', 130, [395, 0, 0, 98, 98, 0, 0, 0]),
+  C('Med', 'Cukry a sladidla', 'kg', 260, [304, 0, 0, 82, 82, 0, 0.3, 0.01]),
+  C('Máslo', 'Tuky', 'kg', 280, [740, 82, 52, 0.6, 0.6, 0, 0.7, 0.02], { allergens: [7] }),
+  C('Olej řepkový', 'Tuky', 'l', 58, [828, 92, 7, 0, 0, 0, 0, 0]),
+  C('Olej slunečnicový', 'Tuky', 'l', 65, [828, 92, 11, 0, 0, 0, 0, 0]),
+  C('Sádlo vepřové', 'Tuky', 'kg', 90, [900, 100, 40, 0, 0, 0, 0, 0]),
+  C('Kokosový tuk', 'Tuky', 'kg', 190, [862, 100, 86, 0, 0, 0, 0, 0]),
+  C('Mléko polotučné 1,5 %', 'Mléčné', 'l', 25, [47, 1.5, 1, 4.8, 4.8, 0, 3.4, 0.1], { allergens: [7] }),
+  C('Mléko plnotučné 3,5 %', 'Mléčné', 'l', 29, [64, 3.5, 2.3, 4.8, 4.8, 0, 3.3, 0.1], { allergens: [7] }),
+  C('Smetana ke šlehání 33 %', 'Mléčné', 'l', 135, [330, 33, 21, 3, 3, 0, 2, 0.08], { allergens: [7] }),
+  C('Smetana na vaření 12 %', 'Mléčné', 'l', 70, [140, 12, 7.5, 4, 4, 0, 3, 0.1], { allergens: [7] }),
+  C('Mascarpone', 'Mléčné', 'kg', 230, [430, 42, 27, 4, 4, 0, 4.8, 0.1], { allergens: [7] }),
+  C('Tvaroh měkký polotučný', 'Mléčné', 'kg', 85, [100, 4, 2.5, 3.5, 3.5, 0, 12, 0.1], { allergens: [7] }),
+  C('Mléko kondenzované slazené', 'Mléčné', 'kg', 110, [330, 8.5, 5.5, 55, 55, 0, 8, 0.2], { allergens: [7] }),
+  C('Sušené mléko plnotučné', 'Mléčné', 'kg', 190, [495, 26, 16, 38, 38, 0, 26, 0.5], { allergens: [7] }),
+  C('Vejce (M)', 'Vejce', 'ks', 6, [143, 9.5, 3.1, 0.7, 0.7, 0, 12.5, 0.36], { allergens: [3], pieceG: 50 }),
+  C('Čokoláda hořká 55 %', 'Čokoláda a kakao', 'kg', 190, [540, 33, 20, 50, 42, 7, 6, 0.02], { allergens: [6] }),
+  C('Čokoláda mléčná', 'Čokoláda a kakao', 'kg', 180, [535, 30, 18, 57, 55, 2, 7, 0.2], { allergens: [6, 7] }),
+  C('Čokoláda bílá', 'Čokoláda a kakao', 'kg', 200, [560, 33, 20, 58, 58, 0, 6, 0.25], { allergens: [6, 7] }),
+  C('Kakao tmavé', 'Čokoláda a kakao', 'kg', 260, [365, 14, 8.5, 24, 1.5, 33, 20, 0.05]),
+  C('Mandle mleté', 'Ořechy a semena', 'kg', 390, [601, 54, 4.1, 5.7, 4.2, 12, 21, 0.01], { allergens: [8] }),
+  C('Vlašské ořechy', 'Ořechy a semena', 'kg', 430, [654, 65, 6, 5, 2.6, 6.7, 15, 0.01], { allergens: [8] }),
+  C('Lískové ořechy', 'Ořechy a semena', 'kg', 410, [628, 61, 4.5, 6, 4.2, 10, 15, 0.01], { allergens: [8] }),
+  C('Mák mletý', 'Ořechy a semena', 'kg', 150, [505, 42, 4.5, 4.5, 2.5, 20, 18, 0.05]),
+  C('Kokos strouhaný', 'Ořechy a semena', 'kg', 180, [640, 62, 55, 7, 6, 16, 7, 0.05]),
+  C('Jahody', 'Ovoce', 'kg', 130, [33, 0.3, 0.1, 5.5, 4.9, 2, 0.7, 0], { yieldPct: 93 }),
+  C('Maliny', 'Ovoce', 'kg', 190, [42, 0.5, 0.1, 5, 4.4, 6.5, 1.2, 0], { yieldPct: 97 }),
+  C('Jablka', 'Ovoce', 'kg', 42, [52, 0.2, 0, 11, 10, 2.4, 0.3, 0], { yieldPct: 80 }),
+  C('Banány', 'Ovoce', 'kg', 45, [90, 0.3, 0.1, 20, 17, 2, 1, 0], { yieldPct: 65 }),
+  C('Meruňková marmeláda', 'Ovoce', 'kg', 85, [250, 0.1, 0, 60, 58, 0.8, 0.4, 0.03]),
+  C('Prášek do pečiva', 'Ostatní', 'kg', 95, [53, 0, 0, 12, 0, 0, 0, 20]),
+  C('Jedlá soda', 'Ostatní', 'kg', 60, [0, 0, 0, 0, 0, 0, 0, 100]),
+  C('Sůl', 'Ostatní', 'kg', 8, [0, 0, 0, 0, 0, 0, 0, 100]),
+  C('Želatina', 'Ostatní', 'kg', 420, [350, 0, 0, 0, 0, 0, 85, 0.5]),
+  C('Rum 40 %', 'Ostatní', 'l', 320, [231, 0, 0, 0, 0, 0, 0, 0]),
+  C('Piškoty (Savoiardi)', 'Ostatní', 'kg', 140, [390, 5, 1.5, 78, 45, 1.5, 9, 0.5], { allergens: [1, 3] }),
+];
+const SEED_NAMES = ['Mouka hladká', 'Mouka polohrubá', 'Cukr krystal', 'Cukr moučka', 'Vanilkový cukr', 'Máslo', 'Vejce (M)', 'Mléko polotučné 1,5 %', 'Smetana ke šlehání 33 %', 'Mascarpone', 'Tvaroh měkký polotučný', 'Čokoláda hořká 55 %', 'Kakao tmavé', 'Mandle mleté', 'Vlašské ořechy', 'Lískové ořechy', 'Mák mletý', 'Škrob bramborový', 'Prášek do pečiva', 'Sůl', 'Želatina', 'Med', 'Meruňková marmeláda', 'Jahody', 'Jablka', 'Olej řepkový', 'Rum 40 %'];
+
+// ------------------------------ ukázková data ------------------------------
+const uid = () => Math.random().toString(36).slice(2, 9);
+function seedData() {
+  const ings = SEED_NAMES.map((n) => ({ id: uid(), ...CATALOG.find((c) => c.name === n), check: false, demo: true }));
+  const id = (n) => ings.find((i) => i.name === n).id;
+  const R = (name, cat, portions, finishedG, laborMin, items, steps) => ({
+    id: uid(), name, cat, portions, finishedG, laborMin, scale: 1, hourly: 220, overheadPct: 30, marginPct: 35, vatPct: 12, chosenPrice: 0,
+    steps, demo: true, items: items.map(([n, q]) => ({ id: uid(), ingId: id(n), qty: q })),
+  });
+  const recipes = [
+    R('Linecké cukroví', 'cukroví', 40, 600, 75, [['Mouka hladká', 300], ['Máslo', 200], ['Cukr moučka', 100], ['Vejce (M)', 1], ['Vanilkový cukr', 10], ['Sůl', 1]],
+      'Mouku prosej s moučkovým cukrem a vanilkovým cukrem.\nPřidej studené máslo na kostky, vejce a sůl, rychle zpracuj v hladké těsto.\nZabal do fólie a nech 1 hodinu odležet v chladu.\nVyválej na 3 mm, vykrajuj, peč při 180 °C 8–10 minut do světle zlatova.\nSlep marmeládou, nech zaschnout.'),
+    R('Piškotový korpus (⌀ 24 cm)', 'těsta', 12, 520, 45, [['Vejce (M)', 5], ['Cukr krystal', 150], ['Mouka hladká', 130], ['Škrob bramborový', 20]],
+      'Žloutky utři s polovinou cukru do pěny.\nBílky ušlehej s druhou polovinou cukru na tuhý sníh.\nStřídavě vmíchej sníh a prosátou mouku se škrobem.\nVylej do vymazané a vysypané formy, peč při 170 °C asi 30 minut.'),
+    R('Čokoládová ganache', 'krémy', 10, 500, 15, [['Smetana ke šlehání 33 %', 250], ['Čokoláda hořká 55 %', 250]],
+      'Smetanu přiveď téměř k varu.\nZalij nasekanou čokoládu, nech minutu stát a promíchej do hladka.\nPro náplň nech přes noc vychladnout, pro polevu použij vlažnou.'),
+  ];
+  return { ings, recipes };
+}
+
+// --------------------------------- stav ---------------------------------
+const KEY = 'cukrarsky-sesit-v1';
+let data = load();
+const ui = { undo: null, cq: '', ret: null, tab: 'recipes', rid: null, sub: 'compose', iid: null, q: '', armed: null, form: { shape: 'circle', f: { a: 24, b: 24 }, t: { a: 28, b: 28 } }, conv: { v: 250, u: 'g' }, vat: { p: 100, rate: 12, with: false }, imp: '' };
+if (!data.recipes.length) ui.rid = null; else ui.rid = data.recipes[0].id;
+
+function load() {
+  try {
+    const raw = localStorage.getItem(KEY);
+    if (raw) { const d = JSON.parse(raw); if (d && Array.isArray(d.ings) && Array.isArray(d.recipes)) return d; }
+  } catch (e) { /* soukromé okno nebo zakázané úložiště: ukázková data zůstanou jen v paměti */ }
+  return seedData();
+}
+function markSaved(ok) {
+  const el = document.getElementById('saved'); if (!el) return;
+  el.className = 'saved ' + (ok ? 'ok' : 'bad'); el.textContent = ok ? 'Uloženo ✓' : 'Neukládá se!';
+  el.dataset.tip = ok ? 'Změny se ukládají automaticky v tomto prohlížeči' : 'Prohlížeč nepovoluje ukládání (soukromé okno?). Zálohuj ručně v záložce Záloha';
+}
+function save() { try { localStorage.setItem(KEY, JSON.stringify(data)); markSaved(true); } catch (e) { markSaved(false); /* bez úložiště stránka funguje dál */ } }
+/** Snímek dat před mazáním, aby šlo smazané vrátit. */
+function snap() { ui.undo = JSON.stringify(data); }
+function doUndo() {
+  if (!ui.undo) return;
+  try { data = JSON.parse(ui.undo); } catch (e) { return; }
+  ui.undo = null;
+  if (!data.recipes.some((x) => x.id === ui.rid)) ui.rid = data.recipes[0]?.id ?? null;
+  if (!data.ings.some((x) => x.id === ui.iid)) ui.iid = null;
+  save(); render(); toast('Vráceno zpět');
+}
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const cz = (n, d = 2) => num(n).toLocaleString('cs-CZ', { minimumFractionDigits: d, maximumFractionDigits: d });
+const kc = (n) => cz(n, 2) + ' Kč';
+const curRecipe = () => data.recipes.find((r) => r.id === ui.rid) || null;
+let toastT;
+function toast(msg, undo) {
+  const t = $('#toast'); t.innerHTML = esc(msg) + (undo ? ' <button type="button" class="toast-btn" data-act="undo">Vrátit zpět</button>' : '');
+  t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => (t.hidden = true), undo ? 9000 : 1800);
+}
+async function copy(text, ok = 'Zkopírováno') {
+  try { await navigator.clipboard.writeText(text); toast(ok); }
+  catch (e) {
+    const ta = document.createElement('textarea'); ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select();
+    let done = false; try { done = document.execCommand('copy'); } catch (e2) { /* nic */ }
+    ta.remove(); toast(done ? ok : 'Kopírování se nepovedlo, označ text ručně');
+  }
+}
+
+// -------------------------------- vykreslení --------------------------------
+const TABS = [['recipes', 'Receptury'], ['ings', 'Suroviny'], ['tools', 'Nástroje'], ['help', 'Nápověda'], ['data', 'Záloha']];
+function renderTabs() {
+  hideTip();
+  $('#tabs').innerHTML = TABS.map(([k, l]) => `<button class="tab" role="tab" aria-selected="${ui.tab === k}" data-act="tab" data-v="${k}">${l}</button>`).join('');
+}
+function render() {
+  renderTabs();
+  const app = $('#app');
+  app.innerHTML = ui.tab === 'recipes' ? viewRecipes() : ui.tab === 'ings' ? viewIngredients() : ui.tab === 'tools' ? viewTools() : ui.tab === 'help' ? viewHelp() : viewData();
+  refresh();
+}
+
+function viewRecipes() {
+  const list = data.recipes.map((r) => {
+    const c = calcRecipe(r, data.ings);
+    const ready = readiness(r, c).every((x) => x.ok);
+    return `<button class="rcard" data-act="open" data-v="${r.id}" aria-current="${r.id === ui.rid}">
+      <b>${esc(r.name || 'Bez názvu')}</b>
+      <span class="meta"><span>${esc(r.cat || '')}</span><span class="mono">${cz(c.portions, 0)} ks</span><span class="mono">${kc(c.pricePerPortion)} / ks</span></span>
+      <span class="meta">${ready ? '<span class="pill ok">hotová</span>' : '<span class="pill berry">rozpracovaná</span>'}${r.demo ? '<span class="pill">ukázka</span>' : ''}</span></button>`;
+  }).join('');
+  const r = curRecipe();
+  const welcome = data.hideWelcome ? '' : `<section class="welcome" aria-label="Jak to funguje">
+    <h2>Jak se s tím pracuje</h2>
+    <ol>
+      <li><span class="n">1</span><b>Ceník surovin</b><span class="d">V záložce Suroviny zkontroluj ceny. Ukázkové jsou jen orientační. Každou surovinu stačí zadat jednou.</span></li>
+      <li><span class="n">2</span><b>Složení</b><span class="d">Vyber recepturu nebo založ novou a přidej suroviny s množstvím. Klávesa Enter skočí na další řádek.</span></li>
+      <li><span class="n">3</span><b>Kalkulace</b><span class="d">Aplikace sama spočítá cenu za kus. Zadej jen čas práce, režii a marži.</span></li>
+      <li><span class="n">4</span><b>Alergeny a výstup</b><span class="d">Alergeny a výživa se doplní ze surovin. Hotovou recepturu zkopíruješ do Excelu.</span></li>
+    </ol>
+    <div class="row-flex"><button class="btn primary" data-act="tour">Projít příklad (1 minuta)</button><button class="btn" data-act="hidewelcome">Rozumím, schovat</button></div>
+  </section>`;
+  return `${welcome}
+  <div class="split">
+    <div class="list-col stack">
+      <div class="sec-h">Moje receptury</div>
+      <button class="btn primary" data-act="newrecipe">+ Nová receptura</button>
+      <div class="list">${list || '<div class="empty">Zatím žádná receptura.</div>'}</div>
+    </div>
+    <div>${r ? viewEditor(r) : '<div class="empty">Vyber recepturu vlevo nebo založ novou.</div>'}</div>
+  </div>
+  <p class="footnote">Data jsou uložená jen v tomto prohlížeči na tomto počítači. <button type="button" class="linkbtn" data-act="tab" data-v="data">Zálohovat</button> · <button type="button" class="linkbtn" data-act="tour">Projít příklad</button> · <button type="button" class="linkbtn" data-act="tab" data-v="help">Slovníček a zkratky</button>${data.hideWelcome ? ' · <button type="button" class="linkbtn" data-act="showwelcome">Zobrazit návod</button>' : ''}</p>`;
+}
+
+function viewEditor(r) {
+  const subs = [['compose', 'Složení'], ['calc', 'Kalkulace'], ['alg', 'Alergeny a výživa'], ['steps', 'Postup a výstup']];
+  const narrow = window.matchMedia('(max-width: 1199px)').matches;
+  return `<div class="stack editor" data-sub="${ui.sub}">
+    <div class="stack">
+      <div class="grid2">
+        <label class="field" style="grid-column: 1 / -1"><span>Název receptury</span><input class="in title" data-rf="name" value="${esc(r.name)}"></label>
+        <label class="field"><span>Skupina</span><input class="in" data-rf="cat" value="${esc(r.cat)}" placeholder="cukroví, dorty, krémy…"></label>
+        <label class="field"><span>Základní dávka dá (ks / porcí)</span><input class="in mono" type="number" inputmode="decimal" min="1" step="any" data-rf="portions" value="${r.portions ? esc(r.portions) : ''}" placeholder="doplň"></label>
+      </div>
+      <div class="sumbar">
+        <div class="hl"><small>Prodejní cena za kus s DPH</small><strong data-out="sum-pricepp"></strong></div>
+        <div><small>Náklady na kus</small><strong data-out="sum-costpp"></strong></div>
+        <div><small>Materiál dávky</small><strong data-out="sum-material"></strong></div>
+        <div><small>Dávka dá</small><strong data-out="sum-portions"></strong></div>
+      </div>
+      <div class="stack" style="gap:8px"><div class="sec-h">Je receptura hotová?</div><ul class="checks" data-out="checks"></ul><div class="readyline" data-out="ready" hidden>Receptura je hotová. Můžeš ji zkopírovat do Excelu v kroku 4.</div></div>
+    </div>
+    <div class="stepbar" role="navigation" aria-label="Kroky receptury">${subs.map(([k, l], n) => `<button type="button" class="step" data-act="go" data-v="${k}" data-step="${k}" aria-current="${narrow && ui.sub === k}"><span class="sn">${n + 1}</span><span class="sl">${l}</span></button>`).join('')}<span class="sb-sum"><span class="nm" data-out="sb-name"></span><span class="pr" data-out="sb-price"></span></span></div>
+    <div class="egrid"><div class="col colL">${sec('compose', viewCompose(r))}${sec('steps', viewSteps(r))}</div><div class="col colR">${sec('calc', viewCalc(r))}${sec('alg', viewAlg(r))}</div></div>
+  </div>`;
+}
+const nextBtn = (k, label) => `<div class="next"><button type="button" class="linkbtn" data-act="go" data-v="${k}">Další krok: ${label} →</button></div>`;
+const sec = (k, html) => `<section class="sec" data-sec="${k}">${html}</section>`;
+
+function ingOptions(sel) {
+  const sorted = [...data.ings].sort((a, b) => a.name.localeCompare(b.name, 'cs'));
+  return `<option value="">– vyber surovinu –</option><option value="__new__">+ Nová surovina (přidat do ceníku)…</option>` + sorted.map((i) => `<option value="${i.id}" ${i.id === sel ? 'selected' : ''}>${esc(i.name)}</option>`).join('');
+}
+
+function viewCompose(r) {
+  const rows = r.items.map((it, i) => {
+    const ing = data.ings.find((x) => x.id === it.ingId);
+    return `<div class="irow">
+      <select class="in" data-if="ingId" data-i="${i}" aria-label="Surovina">${ingOptions(it.ingId)}</select>
+      <div class="qty"><input class="in mono" type="number" inputmode="decimal" min="0" step="any" data-if="qty" data-i="${i}" value="${it.qty ? esc(it.qty) : ''}" placeholder="doplň" aria-label="Množství"><span class="unit">${ing ? BASE_UNIT[ing.base] : ''}</span></div>
+      <div class="nums"><span data-l="V recepturě:" class="mono net" data-out="net-${i}"></span><span data-l="" class="mono" data-out="gross-${i}"></span><span data-l="Cena:" class="mono costcell"><span data-out="cost-${i}"></span><button type="button" class="linkbtn" data-act="fixprice" data-ing="${esc(it.ingId)}" data-fix="${i}" hidden>doplnit cenu</button></span></div>
+      <button class="icon" data-act="delrow" data-i="${i}" aria-label="Odebrat řádek" title="Odebrat">×</button>
+    </div>`;
+  }).join('');
+  return `<div class="card stack">
+    <div class="spread"><h3><span class="nh">1</span>Složení</h3>
+      <div class="row-flex"><span class="small muted">Násobek dávky</span>
+        <input class="in mono" style="width:84px" type="number" inputmode="decimal" min="0.05" step="any" data-rf="scale" value="${esc(r.scale)}" aria-label="Násobek dávky">
+        <button class="btn small" data-act="scale" data-v="0.5">×½</button><button class="btn small" data-act="scale" data-v="1">×1</button><button class="btn small" data-act="scale" data-v="2">×2</button><button class="btn small" data-act="scale" data-v="3">×3</button></div></div>
+    <div class="legend"><span><i class="lg-in"></i>Sem piš</span><span><i class="lg-out"></i>Počítá se samo</span><span><i class="lg-need"></i>Tady ještě něco chybí</span></div>
+    <p class="small muted" style="margin:0">Množství zadávej pro základní dávku. Násobek přepočítá všechno včetně mezd a výživy. Gramy platí u surovin na kila, mililitry u litrů.</p>
+    <details><summary>Přepočet podle velikosti formy</summary>${formCalcHtml(true)}</details>
+    <div><div class="heads"><span>Surovina</span><span>Množství (netto)</span><span>Cena</span><span></span></div>${rows || '<div class="empty">Přidej první surovinu.</div>'}</div>
+    <div class="row-flex"><button class="btn" data-act="addrow">+ Přidat surovinu</button><span class="small muted">Surovina chybí v seznamu? Vyber v řádku „+ Nová surovina“.</span></div>
+    ${nextBtn('calc', '2 Kalkulace')}
+  </div>`;
+}
+
+function viewCalc(r) {
+  return `<div class="card stack">
+    <h3><span class="nh">2</span>Kalkulace ceny</h3>
+    <p class="small muted" style="margin:0">Cena se skládá shora dolů: materiál, práce, režie, zisk a nakonec DPH.</p>
+    <div class="scroll"><table class="tbl">
+      <tr><td>Materiál</td><td class="mono" data-out="c-material"></td></tr>
+      <tr><td><div class="param">Práce <input class="in mono" type="number" inputmode="decimal" min="0" step="any" data-rf="laborMin" value="${r.laborMin ? esc(r.laborMin) : ''}" placeholder="doplň" aria-label="Minuty práce"> min × <input class="in mono" type="number" inputmode="decimal" min="0" step="any" data-rf="hourly" value="${r.hourly ? esc(r.hourly) : ''}" placeholder="doplň" aria-label="Hodinová sazba"> Kč/h</div></td><td class="mono" data-out="c-labor"></td></tr>
+      <tr class="total"><td>Přímé náklady</td><td class="mono" data-out="c-direct"></td></tr>
+      <tr><td><div class="param">Režie <input class="in mono" type="number" inputmode="decimal" min="0" step="any" data-rf="overheadPct" value="${esc(r.overheadPct)}" aria-label="Režie v procentech"> % z nákladů</div></td><td class="mono" data-out="c-overhead"></td></tr>
+      <tr class="total"><td>Vlastní náklady</td><td class="mono" data-out="c-own"></td></tr>
+      <tr><td><div class="param">Marže <input class="in mono" type="number" inputmode="decimal" min="0" max="95" step="any" data-rf="marginPct" value="${esc(r.marginPct)}" aria-label="Marže v procentech"> % z ceny <span class="small muted" data-out="c-margin-note"></span></div></td><td class="mono" data-out="c-profit"></td></tr>
+      <tr class="total"><td>Cena bez DPH</td><td class="mono" data-out="c-net"></td></tr>
+      <tr><td><div class="param">DPH <select class="in" data-rf="vatPct" aria-label="Sazba DPH">${[0, 12, 21].map((v) => `<option value="${v}" ${num(r.vatPct, 12) === v ? 'selected' : ''}>${v} %</option>`).join('')}</select></div></td><td class="mono" data-out="c-vat"></td></tr>
+      <tr class="big"><td>Cena s DPH za celou dávku</td><td class="mono" data-out="c-gross"></td></tr>
+    </table></div>
+    <div class="grid2">
+      <div class="figure"><div class="lab">Náklady na kus</div><div class="val" data-out="c-costpp"></div></div>
+      <div class="figure gold"><div class="lab">Prodejní cena na kus s DPH</div><div class="val" data-out="c-pricepp"></div><div class="small muted">navrhuji zaokrouhlit na <b data-out="c-suggest"></b></div></div>
+    </div>
+    <label class="field"><span>Chci prodávat za (Kč / ks, s DPH). Po vyplnění se marže dopočítá zpětně</span>
+      <input class="in mono" style="max-width:200px" type="number" inputmode="decimal" min="0" step="any" data-rf="chosenPrice" value="${r.chosenPrice ? esc(r.chosenPrice) : ''}" placeholder="např. 35"></label>
+    <div class="small muted">Práci a režii bereš v kalkulaci pro celou dávku. Marže z ceny je podíl zisku na ceně bez DPH, přirážka k nákladům by vyšla vyšší.</div>
+    ${nextBtn('alg', '3 Alergeny a výživa')}
+  </div>`;
+}
+
+function viewAlg(r) {
+  return `<div class="card stack">
+    <h3><span class="nh">3</span>Alergeny</h3>
+    <div class="alg" data-out="alg-chips"></div>
+    <div class="label-text" data-out="alg-text"></div>
+    <p class="small muted" style="margin:0">Alergeny se berou ze surovin v receptuře. Nezapomeň na možné stopy a na to, co v surovinách není vyplněné.</p>
+  </div>
+  <div class="card stack">
+    <h3>Výživové hodnoty (orientačně)</h3>
+    <div class="scroll"><table class="mini-table"><tr><th></th><th>na 100 g</th><th>na 1 kus</th></tr>
+      <tr><td>Energie</td><td class="mono" data-out="n-kj100"></td><td class="mono" data-out="n-kjpp"></td></tr>
+      <tr><td></td><td class="mono" data-out="n-kcal100"></td><td class="mono" data-out="n-kcalpp"></td></tr>
+      <tr><td>Tuky</td><td class="mono" data-out="n-fat100"></td><td class="mono" data-out="n-fatpp"></td></tr>
+      <tr><td>&nbsp;&nbsp;z toho nasycené</td><td class="mono" data-out="n-sat100"></td><td class="mono" data-out="n-satpp"></td></tr>
+      <tr><td>Sacharidy</td><td class="mono" data-out="n-carb100"></td><td class="mono" data-out="n-carbpp"></td></tr>
+      <tr><td>&nbsp;&nbsp;z toho cukry</td><td class="mono" data-out="n-sugar100"></td><td class="mono" data-out="n-sugarpp"></td></tr>
+      <tr><td>Vláknina</td><td class="mono" data-out="n-fiber100"></td><td class="mono" data-out="n-fiberpp"></td></tr>
+      <tr><td>Bílkoviny</td><td class="mono" data-out="n-prot100"></td><td class="mono" data-out="n-protpp"></td></tr>
+      <tr><td>Sůl</td><td class="mono" data-out="n-salt100"></td><td class="mono" data-out="n-saltpp"></td></tr>
+    </table></div>
+    <div class="small muted" data-out="alg-note"></div>
+    <label class="field"><span>Hmotnost hotového výrobku po upečení (g, základní dávka)</span>
+      <input class="in mono" style="max-width:200px" type="number" inputmode="decimal" min="0" step="any" data-rf="finishedG" value="${r.finishedG ? esc(r.finishedG) : ''}" placeholder="prázdné = součet surovin"></label>
+    <p class="small muted" style="margin:0">Hodnoty se počítají ze surovin podle jejich výživy na 100 g, tedy stejně jako na obalu. Energii tvoří tuky, sacharidy, bílkoviny a vláknina.</p>
+    ${nextBtn('steps', '4 Postup a výstup')}
+  </div>`;
+}
+
+function viewSteps(r) {
+  return `<div class="card stack"><h3><span class="nh">4</span>Postup a výstup</h3>
+    <textarea class="in" data-rf="steps" aria-label="Technologický postup" placeholder="Jeden krok na řádek, například: Mouku prosej s cukrem…">${esc(r.steps)}</textarea>
+    <div class="sec-h">Náhled kalkulačního listu</div>
+    <div class="sheet" data-out="sheet"></div>
+    <div class="sec-h">Hotovou recepturu si ulož</div>
+    <div class="row-flex"><button class="btn primary" data-act="copytsv">Kopírovat do Excelu</button><button class="btn" data-act="copytext">Kopírovat jako text</button></div>
+    <div class="sec-h">Další možnosti</div>
+    <div class="row-flex">
+      <button class="btn" data-act="dup">Duplikovat recepturu</button>
+      <button class="btn danger ${ui.armed === 'delrecipe' ? 'armed' : ''}" data-act="delrecipe">${ui.armed === 'delrecipe' ? 'Opravdu smazat? Klikni znovu' : 'Smazat recepturu'}</button>
+    </div></div>`;
+}
+
+// --- suroviny ---
+function viewIngredients() {
+  const ing = data.ings.find((i) => i.id === ui.iid);
+  if (ing) return viewIngEditor(ing);
+  const q = ui.q.trim().toLowerCase();
+  const list = [...data.ings].filter((i) => !q || i.name.toLowerCase().includes(q)).sort((a, b) => a.name.localeCompare(b.name, 'cs'));
+  const rows = list.map((i) => `<button class="rcard" data-act="editing" data-v="${i.id}">
+      <b>${esc(i.name)}</b>
+      <span class="meta"><span class="mono">${cz(i.price)} Kč / ${i.base}</span>${num(i.yieldPct, 100) < 100 ? `<span>výtěžnost ${cz(i.yieldPct, 0)} %</span>` : ''}${(i.allergens || []).length ? `<span class="pill berry">${(i.allergens || []).map((a) => ALLERGENS[a - 1][1]).join(', ')}</span>` : ''}${!(num(i.price) > 0) ? '<span class="pill amber">chybí cena</span>' : ''}</span></button>`).join('');
+  return `<div class="stack">
+    <div class="stack" style="gap:6px"><h2 class="page-h">Ceník surovin</h2><p class="muted" style="margin:0;max-width:720px">Tady je každá surovina jednou: cena, výtěžnost, alergeny a výživa. Receptury si údaje berou odsud, takže když změníš cenu, přepočítají se všechny. Ukázkové ceny jsou orientační, doplň skutečné podle faktur. Výtěžnost je podíl použitelné části (jahody bez stopek 93 %, jablka bez jádřince 80 %).</p></div>
+    <div class="row-flex"><input class="in" style="max-width:320px" id="q" type="search" placeholder="Hledat v mém ceníku…" value="${esc(ui.q)}" aria-label="Hledat v mém ceníku"><button class="btn primary" data-act="newing">+ Vlastní surovina</button></div>
+    <div class="list" style="grid-template-columns:repeat(auto-fill,minmax(260px,1fr))">${rows || '<div class="empty">Nic nenalezeno.</div>'}</div>
+    ${catalogHtml()}
+  </div>`;
+}
+function viewIngEditor(i) {
+  const used = data.recipes.filter((r) => r.items.some((it) => it.ingId === i.id)).length;
+  const f = (label, key, extra = '') => `<label class="field"><span>${label}</span><input class="in mono" type="number" inputmode="decimal" min="0" step="any" data-gf="${key}" value="${i[key] ? esc(i[key]) : ''}" placeholder="${key === 'price' || key === 'kcal' ? 'doplň' : '0'}" ${extra}></label>`;
+  const ret = ui.ret ? data.recipes.find((x) => x.id === ui.ret.rid) : null;
+  return `<div class="stack">
+    ${ret ? `<div class="return"><span>Upravuješ surovinu pro recepturu <b>${esc(ret.name)}</b></span><button class="btn primary small" data-act="retdone">Hotovo, zpět do receptury</button></div>` : '<div><button class="btn small" data-act="backing">← Zpět na ceník</button></div>'}
+    <div class="card stack">
+      <label class="field"><span>Vyplnit z katalogu (neznáš hodnoty? vyber surovinu a údaje se doplní)</span><select class="in" data-cat="1"><option value="">– vyber z katalogu –</option>${CATALOG.map((c, n) => `<option value="${n}">${esc(c.group)} · ${esc(c.name)}</option>`).join('')}</select></label>
+      <label class="field"><span>Název</span><input class="in" data-gf="name" value="${esc(i.name)}"></label>
+      <div class="grid2">
+        <label class="field"><span>Nákupní jednotka</span><select class="in" data-gf="base" data-struct="1">${['kg', 'l', 'ks'].map((b) => `<option value="${b}" ${i.base === b ? 'selected' : ''}>${b === 'kg' ? 'kilogram' : b === 'l' ? 'litr' : 'kus'}</option>`).join('')}</select></label>
+        ${f(`Cena za 1 ${i.base} (Kč, s DPH)`, 'price')}
+        ${i.base === 'ks' ? f('Hmotnost 1 kusu (g)', 'pieceG') : ''}
+        ${f('Výtěžnost (%)', 'yieldPct', 'max="100"')}
+      </div>
+      <div><div class="small muted" style="font-weight:600;margin-bottom:6px">Obsahuje alergeny</div>
+        <div class="alg">${ALLERGENS.map(([n, , full]) => `<label class="chip ${(i.allergens || []).includes(n) ? 'on' : ''}"><input type="checkbox" data-alg="${n}" ${(i.allergens || []).includes(n) ? 'checked' : ''}><b>${n}</b>${esc(full)}</label>`).join('')}</div></div>
+      <div><div class="sec-h" style="margin-bottom:10px">Výživa na 100 g (podle obalu)</div>
+        <div class="grid2">${f('Energie (kcal)', 'kcal')}${f('Tuky (g)', 'fat')}${f('z toho nasycené (g)', 'sat')}${f('Sacharidy (g)', 'carb')}${f('z toho cukry (g)', 'sugar')}${f('Vláknina (g)', 'fiber')}${f('Bílkoviny (g)', 'prot')}${f('Sůl (g)', 'salt')}</div>
+        <label class="chip ${i.check ? 'on' : ''}" style="margin-top:12px"><input type="checkbox" data-chk="1" ${i.check ? 'checked' : ''}><b>✓</b>Hodnoty jsem zkontroloval(a) podle obalu</label></div>
+      <div class="spread"><span class="small muted">Použito v ${used} recepturách</span>
+        <button class="btn danger ${ui.armed === 'delIng' ? 'armed' : ''}" data-act="delIng" ${used ? 'disabled title="Nejdřív odeber z receptur"' : ''}>${ui.armed === 'delIng' ? 'Opravdu smazat? Klikni znovu' : 'Smazat surovinu'}</button></div>
+    </div></div>`;
+}
+
+function catalogHtml() {
+  const have = new Set(data.ings.map((x) => x.name));
+  const q = ui.cq.trim().toLowerCase();
+  const items = CATALOG.map((c, n) => ({ c, n })).filter(({ c }) => !have.has(c.name) && (!q || (c.name + ' ' + c.group).toLowerCase().includes(q)));
+  return `<section class="card stack"><h3>Katalog surovin</h3>
+    <p class="small muted" style="margin:0">Hotová databáze běžných surovin s cenou, alergeny a výživou. Jedním kliknutím ji přidáš do svého ceníku. Hodnoty jsou typické, před použitím je ověř podle obalu konkrétního výrobku. Další zdroj: <a href="https://www.nutridatabaze.cz" target="_blank" rel="noopener" style="color:var(--gold)">Česká databáze složení potravin</a>.</p>
+    <input class="in" id="cq" type="search" style="max-width:320px" placeholder="Hledat v katalogu…" value="${esc(ui.cq)}" aria-label="Hledat v katalogu">
+    <div class="list" style="grid-template-columns:repeat(auto-fill,minmax(260px,1fr))">${items.map(({ c, n }) => `<div class="rcard" style="cursor:default"><b style="font-size:17px">${esc(c.name)}</b><span class="meta"><span>${esc(c.group)}</span><span class="mono">${cz(c.price)} Kč / ${c.base}</span></span><span class="meta">${c.allergens.length ? `<span class="pill berry">${c.allergens.map((a) => ALLERGENS[a - 1][1]).join(', ')}</span>` : ''}<button type="button" class="linkbtn" data-act="addcat" data-v="${n}">+ přidat do ceníku</button></span></div>`).join('') || '<div class="empty">Vše z katalogu už máš v ceníku.</div>'}</div></section>`;
+}
+
+// --- nástroje ---
+function formCalcHtml(apply) {
+  const s = ui.form;
+  const circ = s.shape === 'circle';
+  return `<div class="stack" style="padding-top:10px">
+    <div class="row-flex"><label><input type="radio" name="shape" value="circle" data-form="shape" ${circ ? 'checked' : ''}> kulatá</label><label><input type="radio" name="shape" value="rect" data-form="shape" ${!circ ? 'checked' : ''}> hranatá</label></div>
+    <div class="grid2">
+      <div class="field"><span>Původní forma ${circ ? '(průměr, cm)' : '(strany, cm)'}</span><div class="row-flex"><input class="in mono" style="width:80px" type="number" step="any" min="0" data-form="fa" value="${esc(s.f.a)}" aria-label="Původní forma">${circ ? '' : `<span>×</span><input class="in mono" style="width:80px" type="number" step="any" min="0" data-form="fb" value="${esc(s.f.b)}" aria-label="Původní forma, druhá strana">`}</div></div>
+      <div class="field"><span>Nová forma ${circ ? '(průměr, cm)' : '(strany, cm)'}</span><div class="row-flex"><input class="in mono" style="width:80px" type="number" step="any" min="0" data-form="ta" value="${esc(s.t.a)}" aria-label="Nová forma">${circ ? '' : `<span>×</span><input class="in mono" style="width:80px" type="number" step="any" min="0" data-form="tb" value="${esc(s.t.b)}" aria-label="Nová forma, druhá strana">`}</div></div>
+    </div>
+    <div class="spread"><div>Násobek: <b class="mono" data-out="form-factor"></b> <span class="small muted" data-out="form-hint"></span></div>
+      ${apply && curRecipe() ? '<button class="btn small primary" data-act="applyform">Použít na tuto recepturu</button>' : ''}</div></div>`;
+}
+function viewTools() {
+  const c = ui.conv, v = ui.vat;
+  return `<div class="stack" style="max-width:720px">
+    <div class="card stack"><h3>Přepočet podle formy</h3>${formCalcHtml(false)}
+      <p class="small muted" style="margin:0">Plocha roste s druhou mocninou průměru: z ⌀ 24 na ⌀ 28 cm potřebuješ asi 1,36× víc těsta. Výšku těsta v kroku nech stejnou.</p></div>
+    <div class="card stack"><h3>Převod jednotek</h3>
+      <div class="row-flex"><input class="in mono" style="width:110px" type="number" step="any" min="0" data-conv="v" value="${esc(c.v)}" aria-label="Hodnota"><select class="in" style="width:auto" data-conv="u" aria-label="Jednotka">${Object.keys(UNITS).map((u) => `<option ${u === c.u ? 'selected' : ''}>${u}</option>`).join('')}</select></div>
+      <div class="mini-table" data-out="conv-out"></div>
+      <p class="small muted" style="margin:0">Objem se na hmotnost nepřevádí, protože každá surovina má jinou hustotu (mouka je mnohem lehčí než med).</p></div>
+    <div class="card stack"><h3>DPH: s daní a bez daně</h3>
+      <div class="row-flex"><input class="in mono" style="width:120px" type="number" step="any" min="0" data-vat="p" value="${esc(v.p)}" aria-label="Cena">
+        <select class="in" style="width:auto" data-vat="with" aria-label="Typ ceny"><option value="0" ${!v.with ? 'selected' : ''}>cena bez DPH</option><option value="1" ${v.with ? 'selected' : ''}>cena s DPH</option></select>
+        <select class="in" style="width:auto" data-vat="rate" aria-label="Sazba">${[12, 21, 0].map((x) => `<option value="${x}" ${num(v.rate) === x ? 'selected' : ''}>${x} %</option>`).join('')}</select></div>
+      <div class="mini-table" data-out="vat-out"></div></div>
+  </div>`;
+}
+
+// --- data ---
+function viewData() {
+  return `<div class="stack" style="max-width:720px">
+    <h2 class="page-h">Záloha a obnovení</h2>
+    <div class="card stack"><h3>Záloha</h3>
+      <p class="small muted" style="margin:0">Zkopíruj text níže a ulož ho třeba do poznámek nebo e-mailu. Na jiném telefonu ho vložíš do pole Načíst a máš všechno.</p>
+      <textarea class="in mono" readonly style="font-size:12px" aria-label="Záloha">${esc(JSON.stringify(data))}</textarea>
+      <div><button class="btn primary" data-act="copyjson">Kopírovat zálohu</button></div></div>
+    <div class="card stack"><h3>Načíst zálohu</h3>
+      <textarea class="in mono" id="imp" style="font-size:12px" placeholder="Sem vlož zálohu" aria-label="Vložit zálohu">${esc(ui.imp)}</textarea>
+      <div class="row-flex"><button class="btn" data-act="import">Načíst a nahradit data</button><span class="small" data-out="imp-msg"></span></div></div>
+    <div class="card stack"><h3>Začít znovu</h3>
+      <p class="small muted" style="margin:0">Smaže všechny tvoje receptury i suroviny a vrátí ukázková data.</p>
+      <div><button class="btn danger ${ui.armed === 'reset' ? 'armed' : ''}" data-act="reset">${ui.armed === 'reset' ? 'Opravdu? Klikni znovu' : 'Obnovit ukázková data'}</button></div></div>
+  </div>`;
+}
+
+// ------------------------- dopočty bez překreslení -------------------------
+function setOut(key, text) { document.querySelectorAll(`[data-out="${key}"]`).forEach((el) => (el.textContent = text)); }
+function setHtml(key, html) { document.querySelectorAll(`[data-out="${key}"]`).forEach((el) => (el.innerHTML = html)); }
+function refresh() {
+  refreshValues();
+  markNeeds();
+  applyTips();
+}
+/** Jemně označí pole, která ještě čekají na vyplnění. */
+function markNeeds() {
+  const r = curRecipe();
+  const mark = (sel, on) => document.querySelectorAll(sel).forEach((el) => el.classList.toggle('need', on));
+  if (ui.tab === 'recipes' && r) {
+    r.items.forEach((it, i) => {
+      mark(`[data-if="ingId"][data-i="${i}"]`, !it.ingId);
+      mark(`[data-if="qty"][data-i="${i}"]`, !!it.ingId && !(num(it.qty) > 0));
+    });
+    for (const k of ['laborMin', 'hourly', 'portions']) mark(`[data-rf="${k}"]`, !(num(r[k]) > 0));
+    mark('[data-rf="steps"]', !String(r.steps || '').trim());
+    mark('[data-rf="name"]', !String(r.name || '').trim());
+  }
+  const ing = ui.tab === 'ings' ? data.ings.find((x) => x.id === ui.iid) : null;
+  if (ing) {
+    mark('[data-gf="name"]', !String(ing.name || '').trim());
+    mark('[data-gf="price"]', !(num(ing.price) > 0));
+    mark('[data-gf="yieldPct"]', !(num(ing.yieldPct) > 0));
+    mark('[data-gf="kcal"]', !hasNutri(ing));
+  }
+}
+function refreshValues() {
+  const r = curRecipe();
+  if (ui.tab === 'recipes' && r) {
+    const c = calcRecipe(r, data.ings);
+    setOut('sum-material', kc(c.material)); setOut('sum-costpp', kc(c.costPerPortion)); setOut('sum-pricepp', kc(c.pricePerPortion)); setOut('sum-portions', cz(c.portions, c.portions % 1 ? 1 : 0) + ' ks');
+    const rd = readiness(r, c);
+    setHtml('checks', rd.map((x) => `<li class="${x.ok ? 'ok' : ''}"><button type="button" class="linkbtn" ${x.ok ? 'tabindex="-1"' : `data-act="${x.act}" data-v="${x.v}" data-ing="${x.ingId || ''}"`}><span class="tick">${x.ok ? '✓' : '○'}</span>${esc(x.ok ? x.done : x.todo)}</button></li>`).join(''));
+    setHtml('sheet', sheetHtml(r, c));
+    setOut('sb-name', r.name || 'Bez názvu'); setOut('sb-price', kc(c.pricePerPortion) + ' / ks');
+    const STEP_KEYS = { compose: ['items', 'price'], calc: ['labor'], alg: ['nutri'], steps: ['steps'] };
+    document.querySelectorAll('.step').forEach((el) => { const ok = STEP_KEYS[el.dataset.step].every((k) => rd.find((x) => x.key === k)?.ok); el.classList.toggle('done', ok); el.querySelector('.sn').textContent = ok ? '✓' : ['compose', 'calc', 'alg', 'steps'].indexOf(el.dataset.step) + 1; });
+    document.querySelectorAll('[data-out="ready"]').forEach((el) => (el.hidden = !rd.every((x) => x.ok)));
+    c.lines.forEach((l, i) => document.querySelectorAll(`[data-fix="${i}"]`).forEach((el) => (el.hidden = !(l.ing && l.missing))));
+    c.lines.forEach((l, i) => {
+      setOut(`net-${i}`, l.ing ? `${cz(l.net, l.net % 1 ? 1 : 0)} ${l.unit}` : '–');
+      const y = l.ing ? num(l.ing.yieldPct, 100) : 100;
+      setOut(`gross-${i}`, l.ing && y < 100 ? `po započtení ztrát (výtěžnost ${cz(y, 0)} %) nakoupit ${cz(l.gross, l.gross % 1 ? 1 : 0)} ${l.unit}` : '');
+      setOut(`cost-${i}`, l.ing ? (l.missing ? 'chybí cena' : kc(l.cost)) : '–');
+    });
+    setOut('c-material', kc(c.material)); setOut('c-labor', kc(c.labor)); setOut('c-direct', kc(c.material + c.labor)); setOut('c-overhead', kc(c.overhead));
+    setOut('c-own', kc(c.own)); setOut('c-profit', kc(c.net_price - c.own)); setOut('c-net', kc(c.net_price)); setOut('c-vat', kc(c.vatAmount)); setOut('c-gross', kc(c.gross_price));
+    setOut('c-costpp', kc(c.costPerPortion)); setOut('c-pricepp', kc(c.pricePerPortion)); setOut('c-suggest', cz(c.suggestedPerPortion, 0) + ' Kč');
+    setOut('c-margin-note', num(r.chosenPrice) > 0 ? `(při tvé ceně vychází ${cz(c.marginPct, 1)} %)` : '');
+    setHtml('alg-chips', ALLERGENS.map(([n, short]) => `<div class="chip ${c.allergens.includes(n) ? 'on' : ''}"><b>${n}</b>${short}</div>`).join(''));
+    setHtml('alg-text', c.allergens.length ? `<b>Alergeny:</b> ${c.allergens.map((n) => `<b>${ALLERGENS[n - 1][1]}</b> (${n})`).join(', ')}` : 'Podle vyplněných surovin neobsahuje žádný z 14 alergenů.');
+    for (const [suffix, n] of [['100', c.nutri100], ['pp', c.nutriPortion]]) {
+      setOut(`n-kj${suffix}`, cz(n.kcal * 4.184, 0) + ' kJ'); setOut(`n-kcal${suffix}`, cz(n.kcal, 0) + ' kcal');
+      for (const k of ['fat', 'sat', 'carb', 'sugar', 'fiber', 'prot']) setOut(`n-${k}${suffix}`, cz(n[k], 1) + ' g');
+      setOut(`n-salt${suffix}`, cz(n.salt, 2) + ' g');
+    }
+    const u = c.unverified, pl = u === 1 ? 'suroviny' : 'surovin';
+    setOut('alg-note', u ? `Hodnoty u ${u} ${pl} jsou typické a neověřené. V ceníku je po kontrole podle obalu označ jako ověřené.` : 'Výživa vychází z ověřených surovin.');
+  }
+  if (ui.tab === 'tools' || ui.tab === 'recipes') {
+    const fct = formFactor(ui.form.shape, ui.form.f, ui.form.t);
+    setOut('form-factor', fct ? '× ' + cz(fct, 2) : '–');
+    setOut('form-hint', fct ? (fct > 1 ? 'víc těsta' : fct < 1 ? 'míň těsta' : 'stejně') : 'doplň rozměry');
+  }
+  if (ui.tab === 'tools') {
+    setHtml('conv-out', `<table class="mini-table">${convertUnit(ui.conv.v, ui.conv.u).map(([u, x]) => `<tr><td>${esc(u)}</td><td class="mono">${cz(x, x < 10 ? 2 : 1)}</td></tr>`).join('')}</table>`);
+    const s = vatSplit(ui.vat.p, ui.vat.rate, ui.vat.with);
+    setHtml('vat-out', `<table class="mini-table"><tr><td>Bez DPH</td><td class="mono">${kc(s.net)}</td></tr><tr><td>DPH ${cz(ui.vat.rate, 0)} %</td><td class="mono">${kc(s.gross - s.net)}</td></tr><tr><td><b>S DPH</b></td><td class="mono"><b>${kc(s.gross)}</b></td></tr></table>`);
+  }
+}
+
+// ------------------------------- texty pro export -------------------------------
+function recipeTsv(r) {
+  const c = calcRecipe(r, data.ings);
+  const rows = [['Surovina', 'Množství (netto)', 'Jednotka', 'Výtěžnost %', 'Množství (brutto)', 'Cena za jednotku', 'Náklad Kč']];
+  c.lines.forEach((l) => l.ing && rows.push([l.ing.name, l.net.toFixed(1), l.unit, num(l.ing.yieldPct, 100), l.gross.toFixed(1), `${l.ing.price}/${l.ing.base}`, l.cost.toFixed(2)]));
+  rows.push([], ['Materiál', '', '', '', '', '', c.material.toFixed(2)], ['Práce', '', '', '', '', '', c.labor.toFixed(2)], ['Režie', '', '', '', '', '', c.overhead.toFixed(2)],
+    ['Vlastní náklady', '', '', '', '', '', c.own.toFixed(2)], ['Cena bez DPH', '', '', '', '', '', c.net_price.toFixed(2)], ['Cena s DPH', '', '', '', '', '', c.gross_price.toFixed(2)],
+    ['Kusů', '', '', '', '', '', c.portions.toFixed(1)], ['Cena za kus s DPH', '', '', '', '', '', c.pricePerPortion.toFixed(2)], [],
+    ['Výživa', 'na 100 g', 'na kus'], ...NUTR.map((k) => [NUTR_LABEL[k] + (k === 'kcal' ? ' (kcal)' : k === 'salt' ? ' (g)' : ' (g)'), c.nutri100[k].toFixed(2), c.nutriPortion[k].toFixed(2)]));
+  return rows.map((x) => x.join('\t')).join('\n');
+}
+function recipeText(r) {
+  const c = calcRecipe(r, data.ings);
+  const lines = [r.name, '', 'Suroviny:'];
+  c.lines.forEach((l) => l.ing && lines.push(`  ${l.ing.name}: ${cz(l.net, l.net % 1 ? 1 : 0)} ${l.unit}`));
+  lines.push('', `Dá: ${cz(c.portions, c.portions % 1 ? 1 : 0)} ks`, `Cena za kus: ${kc(c.pricePerPortion)} s DPH (náklady ${kc(c.costPerPortion)})`);
+  lines.push(`Alergeny: ${c.allergens.length ? c.allergens.map((n) => `${ALLERGENS[n - 1][1]} (${n})`).join(', ') : 'žádné'}`);
+  const n = c.nutri100;
+  lines.push(`Výživa na 100 g: ${cz(n.kcal * 4.184, 0)} kJ / ${cz(n.kcal, 0)} kcal, tuky ${cz(n.fat, 1)} g (nasycené ${cz(n.sat, 1)} g), sacharidy ${cz(n.carb, 1)} g (cukry ${cz(n.sugar, 1)} g), vláknina ${cz(n.fiber, 1)} g, bílkoviny ${cz(n.prot, 1)} g, sůl ${cz(n.salt, 2)} g`);
+  if (r.steps) lines.push('', 'Postup:', r.steps);
+  return lines.join('\n');
+}
+
+// ------------------------------ nápověda, náhled, hledání, průvodce ------------------------------
+const GLOSSARY = [
+  ['Receptura', 'Seznam surovin s množstvím pro určitou dávku a postup, jak se z nich vyrobí hotový výrobek.'],
+  ['Netto a brutto', 'Netto je čistá surovina, která opravdu jde do výrobku. Brutto je to, co musíš nakoupit, protože část se při přípravě ztratí (stopky, slupky, jádřince).'],
+  ['Výtěžnost', 'Kolik procent nakoupené suroviny se dá použít. Jahody bez stopek mají asi 93 %. Při 93 % výtěžnosti musíš na 100 g jahod nakoupit asi 108 g.'],
+  ['Normování (norma spotřeby)', 'Určení, kolik které suroviny je potřeba na jednu dávku nebo jeden kus. Právě to v receptuře zadáváš.'],
+  ['Násobek dávky', 'Kolikrát větší nebo menší dávku vyrábíš. Násobek 2 znamená dvojnásobek všech surovin, práce i výživy.'],
+  ['Přímé náklady', 'To, co jde přímo na výrobek: suroviny (materiál) a práce.'],
+  ['Režie', 'Náklady na provoz, které nejdou přiřadit jednomu výrobku: energie, nájem, mytí nádobí, odpisy strojů. Počítá se jako procento z přímých nákladů.'],
+  ['Vlastní náklady', 'Přímé náklady plus režie. Tolik tě výroba opravdu stojí.'],
+  ['Marže', 'Podíl zisku v prodejní ceně bez DPH. Příklad: náklady 100 Kč a marže 30 % dají cenu 142,86 Kč, protože 30 % z ní (42,86 Kč) je zisk.'],
+  ['Přirážka', 'Zisk jako procento z nákladů. Náklady 100 Kč a přirážka 30 % dají cenu 130 Kč. Při stejném čísle je přirážka vždy nižší než marže, proto se obě nesmí zaměňovat.'],
+  ['DPH', 'Daň z přidané hodnoty. Cena bez DPH plus DPH je cena, kterou platí zákazník. Sazby se mění, zeptej se učitelky nebo účetní, jakou použít.'],
+  ['Technologický postup', 'Popis, jak se výrobek vyrábí, krok za krokem, včetně teplot a časů.'],
+  ['Alergeny (14)', 'Zákon stanoví 14 látek, které se musí uvádět: lepek, korýši, vejce, ryby, arašídy, sója, mléko, skořápkové plody, celer, hořčice, sezam, siřičitany, vlčí bob a měkkýši.'],
+  ['Energie (kJ a kcal)', 'Energetická hodnota. 1 kcal je 4,184 kJ. Na obalech se uvádí obojí.'],
+  ['Nasycené tuky', 'Část tuků, které je dobré jíst méně. Jsou součástí celkových tuků.'],
+  ['Cukry', 'Součást sacharidů, jednoduché cukry. Neznamená to jen přidaný cukr, ale i cukr z ovoce a mléka.'],
+  ['Vláknina', 'Nestravitelná složka potravy, najdeš ji hlavně v celozrnných moukách, ořeších a ovoci.'],
+  ['Sůl', 'Přepočet sodíku na sůl (sodík krát 2,5). I sladké výrobky obsahují trochu soli, třeba v mouce nebo v másle.'],
+  ['Hmotnost hotového výrobku', 'Váha po upečení. Při pečení se odpaří voda, proto je menší než součet surovin. Podle ní se počítá výživa na 100 g.'],
+];
+const SHORTCUTS = [['Enter v poli množství', 'Skočí na další řádek surovin, na posledním řádku založí nový'], ['Tab a Shift+Tab', 'Další a předchozí pole'], ['Ctrl+K', 'Rychlé hledání receptury, suroviny nebo akce'], ['Ctrl+Z', 'Vrátí poslední smazání (receptury, suroviny nebo řádku)'], ['Esc', 'Zavře okno, průvodce nebo vysvětlivku'], ['?', 'Zobrazí tento přehled zkratek']];
+const shortcutsHtml = () => `<h3 style="margin-bottom:12px">Klávesové zkratky</h3><table class="keys">${SHORTCUTS.map(([k, d]) => `<tr><td><kbd>${esc(k)}</kbd></td><td>${esc(d)}</td></tr>`).join('')}</table>`;
+function viewHelp() {
+  return `<div class="stack" style="max-width:820px">
+    <h2 class="page-h">Nápověda</h2>
+    <div class="card stack"><h3>Začni zde</h3>
+      <p class="muted" style="margin:0">Prohlídka na ukázkové receptuře ti za minutu ukáže, kam psát, co se počítá samo a jak recepturu uložit do Excelu.</p>
+      <div><button class="btn primary" data-act="tour">Projít příklad (1 minuta)</button></div></div>
+    <div class="card stack"><h3>Klávesové zkratky</h3>${shortcutsHtml().replace(/<h3[^>]*>.*?<\/h3>/, '')}</div>
+    <div class="card stack"><h3>Slovníček pojmů</h3><dl class="gloss">${GLOSSARY.map(([t, d]) => `<dt>${esc(t)}</dt><dd>${esc(d)}</dd>`).join('')}</dl></div>
+    <div class="card stack"><h3>Kde jsou moje data?</h3><p class="muted" style="margin:0">Jen v tomto prohlížeči na tomto počítači. Ukládají se samy, nahoře vidíš „Uloženo ✓". Pro jistotu je občas zazálohuj.</p><div><button class="btn" data-act="tab" data-v="data">Otevřít zálohu</button></div></div>
+  </div>`;
+}
+/** Hotový kalkulační list: tak, jak ho uvidí učitelka (a jak se vytiskne). */
+function sheetHtml(r, c) {
+  const unit = (l) => l.unit, fx = (n) => cz(n, n % 1 ? 1 : 0);
+  const rows = c.lines.filter((l) => l.ing && l.net > 0).map((l) => `<tr><td>${esc(l.ing.name)}</td><td>${fx(l.net)} ${unit(l)}</td><td>${fx(l.gross)} ${unit(l)}</td><td>${cz(l.ing.price)} Kč/${l.ing.base}</td><td>${kc(l.cost)}</td></tr>`).join('');
+  const n = c.nutri100, vat = num(r.vatPct, 12);
+  return `<header><div><small>Kalkulační list</small><h4>${esc(r.name || 'Bez názvu')}</h4></div><div class="right"><small>${new Date().toLocaleDateString('cs-CZ')}</small>${fx(c.portions)} ks · hotový výrobek ${cz(c.finishedG, 0)} g</div></header>
+  <div class="scroll"><table><thead><tr><th>Surovina</th><th>Netto</th><th>Brutto</th><th>Cena</th><th>Náklad</th></tr></thead><tbody>${rows || '<tr><td colspan="5">Zatím žádné suroviny</td></tr>'}</tbody></table></div>
+  <table class="sum"><tr><td>Materiál</td><td>${kc(c.material)}</td></tr><tr><td>Práce (${num(r.laborMin)} min × ${num(r.hourly)} Kč/h)</td><td>${kc(c.labor)}</td></tr><tr><td>Režie (${num(r.overheadPct)} %)</td><td>${kc(c.overhead)}</td></tr>
+    <tr><td><b>Vlastní náklady</b></td><td>${kc(c.own)}</td></tr><tr><td>Zisk (marže ${cz(c.marginPct, 1)} %)</td><td>${kc(c.net_price - c.own)}</td></tr><tr><td>Cena bez DPH</td><td>${kc(c.net_price)}</td></tr><tr><td>DPH ${vat} %</td><td>${kc(c.vatAmount)}</td></tr>
+    <tr><td><b>Cena s DPH za dávku</b></td><td>${kc(c.gross_price)}</td></tr><tr class="big"><td>Cena za kus s DPH</td><td>${kc(c.pricePerPortion)}</td></tr></table>
+  <p><b>Alergeny:</b> ${c.allergens.length ? c.allergens.map((a) => `${ALLERGENS[a - 1][1]} (${a})`).join(', ') : 'žádný z 14'}</p>
+  <p><b>Výživa na 100 g:</b> ${cz(n.kcal * 4.184, 0)} kJ / ${cz(n.kcal, 0)} kcal · tuky ${cz(n.fat, 1)} g (nasycené ${cz(n.sat, 1)} g) · sacharidy ${cz(n.carb, 1)} g (cukry ${cz(n.sugar, 1)} g) · vláknina ${cz(n.fiber, 1)} g · bílkoviny ${cz(n.prot, 1)} g · sůl ${cz(n.salt, 2)} g</p>
+  ${r.steps ? `<p class="steps-txt"><b>Postup:</b>\n${esc(r.steps)}</p>` : ''}`;
+}
+
+// --- modální okno a rychlé hledání (Ctrl+K) ---
+function openModal(html) { const o = $('#overlay'); o.innerHTML = `<div class="modal-back" data-close="1"><div class="modal" role="dialog" aria-modal="true">${html}</div></div>`; o.hidden = false; hideTip(); }
+function closeModal() { const o = $('#overlay'); o.hidden = true; o.innerHTML = ''; }
+const fold = (t) => String(t).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+let palSel = 0, palItems = [];
+function palAll() {
+  const go = (tab) => () => { ui.tab = tab; ui.iid = null; ui.ret = null; render(); window.scrollTo({ top: 0 }); };
+  return [
+    { label: 'Nová receptura', kind: 'akce', run: () => { ui.tab = 'recipes'; render(); document.querySelector('[data-act="newrecipe"]')?.click(); } },
+    { label: 'Projít příklad', kind: 'akce', run: () => startTour() },
+    { label: 'Receptury', kind: 'záložka', run: go('recipes') }, { label: 'Ceník surovin', kind: 'záložka', run: go('ings') }, { label: 'Nástroje', kind: 'záložka', run: go('tools') },
+    { label: 'Nápověda a slovníček', kind: 'záložka', run: go('help') }, { label: 'Záloha dat', kind: 'záložka', run: go('data') },
+    { label: 'Přepnout světlý a tmavý vzhled', kind: 'akce', run: () => $('#theme').click() },
+    ...data.recipes.map((r) => ({ label: r.name || 'Bez názvu', kind: 'receptura', run: () => { ui.tab = 'recipes'; ui.rid = r.id; ui.sub = 'compose'; render(); window.scrollTo({ top: 0 }); } })),
+    ...data.ings.map((i) => ({ label: i.name, kind: 'surovina', run: () => { ui.tab = 'ings'; ui.iid = i.id; ui.ret = null; render(); window.scrollTo({ top: 0 }); } })),
+  ];
+}
+function renderPal(q) {
+  const f = fold(q.trim());
+  palItems = palAll().filter((x) => !f || fold(x.label).includes(f) || fold(x.kind).includes(f)).slice(0, 12);
+  palSel = Math.min(palSel, Math.max(0, palItems.length - 1));
+  $('#pall').innerHTML = palItems.map((x, n) => `<li data-pal="${n}" aria-selected="${n === palSel}"><b>${esc(x.label)}</b><small>${esc(x.kind)}</small></li>`).join('') || '<li style="cursor:default"><span class="muted">Nic nenalezeno</span></li>';
+}
+function openPalette() { palSel = 0; openModal(`<div class="pal"><input id="palq" class="in" placeholder="Hledej recepturu, surovinu nebo akci…" autocomplete="off" aria-label="Rychlé hledání"><ul id="pall" class="pal-list" role="listbox"></ul><p class="small muted" style="margin:10px 0 0">Šipky nahoru a dolů, Enter vybere, Esc zavře.</p></div>`); $('#palq').focus(); renderPal(''); }
+function runPal(n) { const it = palItems[n]; if (!it) return; closeModal(); it.run(); }
+document.addEventListener('input', (e) => { if (e.target.id === 'palq') { palSel = 0; renderPal(e.target.value); } });
+document.addEventListener('keydown', (e) => {
+  const typing = /INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName || '');
+  const open = !$('#overlay').hidden;
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); open ? closeModal() : openPalette(); return; }
+  if (e.key === 'Escape') { if (open) closeModal(); else if (tour) endTour(); return; }
+  if (open && document.activeElement?.id === 'palq') {
+    if (e.key === 'ArrowDown') { e.preventDefault(); palSel = Math.min(palItems.length - 1, palSel + 1); renderPal($('#palq').value); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); palSel = Math.max(0, palSel - 1); renderPal($('#palq').value); }
+    else if (e.key === 'Enter') { e.preventDefault(); runPal(palSel); }
+    return;
+  }
+  if (e.key === '?' && !typing && !open) { e.preventDefault(); openModal(shortcutsHtml()); }
+});
+$('#open-pal').addEventListener('click', openPalette);
+
+// --- průvodce na ukázkové receptuře ---
+const TOUR = [
+  { sel: null, t: 'Tohle je ukázková receptura. Za minutu si ukážeme, jak aplikace funguje. Mezi kroky se přepínáš tlačítkem Další.' },
+  { sel: '.sumbar .hl', sub: 'compose', t: 'Tady je hlavní výsledek: prodejní cena jednoho kusu. Mění se podle všeho, co upravíš.' },
+  { sel: '[data-if="qty"][data-i="1"]', sub: 'compose', t: 'Do podbarvených polí píšeš ty. Zkus změnit množství másla třeba na 300 a sleduj, jak se změní cena.' },
+  { sel: '[data-out="cost-1"]', sub: 'compose', t: 'Tohle se počítá samo: cena řádku vychází z ceny suroviny v ceníku a zahrnuje ztráty.' },
+  { sel: '[data-rf="laborMin"]', sub: 'calc', t: 'Sem napiš, kolik minut práce receptura zabere. Započítá se do ceny.' },
+  { sel: '[data-rf="marginPct"]', sub: 'calc', t: 'Marže je podíl zisku v ceně. Zkus ji změnit a sleduj cenu za kus.' },
+  { sel: '[data-out="alg-chips"]', sub: 'alg', t: 'Alergeny se doplní samy podle surovin v receptuře. Nic nezadáváš.' },
+  { sel: '[data-out="checks"]', sub: 'compose', t: 'Tady vidíš, co ještě chybí. Když jsou všude zelené značky, je receptura hotová.' },
+  { sel: '[data-act="copytsv"]', sub: 'steps', t: 'Hotovo? Zkopíruješ ji a vložíš do Excelu. Nad tlačítkem je náhled kalkulačního listu.' },
+  { sel: null, t: 'To je všechno. Teď si zkus založit vlastní recepturu tlačítkem Nová receptura. Průvodce najdeš kdykoli v Nápovědě.' },
+];
+let tour = null, tourRaf = 0;
+function startTour() {
+  const r = data.recipes.find((x) => x.demo) || data.recipes[0];
+  if (!r) { toast('Nejdřív založ nebo obnov nějakou recepturu'); return; }
+  ui.tab = 'recipes'; ui.rid = r.id; ui.iid = null; ui.ret = null; ui.sub = 'compose';
+  tour = { i: 0 }; $('#tour').innerHTML = '<div class="tour-ring"></div><div class="tour-card" role="dialog" aria-label="Průvodce"></div>'; $('#tour').hidden = false;
+  render(); showTourStep(0);
+}
+function endTour() { tour = null; cancelAnimationFrame(tourRaf); $('#tour').hidden = true; $('#tour').innerHTML = ''; }
+function showTourStep(i) {
+  if (!tour) return; if (i < 0) i = 0; if (i >= TOUR.length) { endTour(); return; }
+  tour.i = i; const st = TOUR[i];
+  if (st.sub && window.matchMedia('(max-width: 1199px)').matches && ui.sub !== st.sub) { ui.sub = st.sub; render(); }
+  const last = i === TOUR.length - 1;
+  $('#tour .tour-card').innerHTML = `<div class="tour-n">Krok ${i + 1} z ${TOUR.length}</div><p>${esc(st.t)}</p><div class="row-flex">${i ? '<button type="button" class="btn small" data-tour="prev">Zpět</button>' : ''}<button type="button" class="btn small primary" data-tour="next">${last ? 'Hotovo' : 'Další'}</button>${last ? '' : '<button type="button" class="linkbtn" data-tour="end">Ukončit</button>'}</div>`;
+  const el = st.sel && document.querySelector(st.sel); if (el) el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  cancelAnimationFrame(tourRaf); tourLoop();
+}
+function tourLoop() {
+  if (!tour) return;
+  const st = TOUR[tour.i], ring = $('#tour .tour-ring'), card = $('#tour .tour-card');
+  const el = st.sel ? document.querySelector(st.sel) : null;
+  const vis = el && el.offsetParent !== null && el.getBoundingClientRect().width > 0;
+  const cw = card.offsetWidth, ch = card.offsetHeight, vw = window.innerWidth, vh = window.innerHeight;
+  if (vis) {
+    const r = el.getBoundingClientRect();
+    Object.assign(ring.style, { display: 'block', left: r.left - 8 + 'px', top: r.top - 6 + 'px', width: r.width + 16 + 'px', height: r.height + 12 + 'px' });
+    let y = r.bottom + 16; if (y + ch > vh - 10) y = Math.max(10, r.top - ch - 16);
+    card.style.left = Math.max(10, Math.min(vw - cw - 10, r.left + r.width / 2 - cw / 2)) + 'px'; card.style.top = y + 'px';
+  } else {
+    ring.style.display = 'block'; Object.assign(ring.style, { left: vw / 2 + 'px', top: vh / 2 + 'px', width: '0px', height: '0px' });
+    card.style.left = (vw - cw) / 2 + 'px'; card.style.top = Math.max(10, vh / 2 - ch / 2) + 'px';
+  }
+  tourRaf = requestAnimationFrame(tourLoop);
+}
+
+// ------------------------------ vysvětlivky (tooltipy) ------------------------------
+// Všechny texty jsou na jednom místě. applyTips() je po každém vykreslení přiřadí prvkům podle jejich data-atributů.
+const ALG_EX = { 1: 'pšenice, žito, ječmen, oves, špalda', 2: 'krevety, krabi, raci', 3: 'vejce a výrobky z nich', 4: 'ryby a výrobky z nich', 5: 'arašídy', 6: 'sójové boby, sójová mouka, lecitin E322', 7: 'mléko, smetana, máslo, tvaroh, laktóza', 8: 'mandle, lískové, vlašské, kešu, pekanové, pistáciové ořechy', 9: 'celer, celerová nať i kořen', 10: 'hořčice a hořčičné semínko', 11: 'sezam a sezamová semínka', 12: 'siřičitany nad 10 mg/kg, například sušené ovoce nebo víno', 13: 'vlčí bob (lupina)', 14: 'slávky, ústřice, hlemýždi' };
+const TIPS = {
+  tab: { recipes: 'Tvoje receptury a jejich kalkulace', ings: 'Ceník surovin: ceny, alergeny a výživa, ze kterých se receptury počítají', tools: 'Pomůcky: přepočet formy, převod jednotek a DPH', data: 'Záloha dat a jejich obnovení', help: 'Slovníček pojmů, klávesové zkratky a projití příkladu' },
+  sub: { compose: 'Krok 1: suroviny a množství', calc: 'Krok 2: z čeho se skládá cena', alg: 'Krok 3: alergeny a výživové hodnoty', steps: 'Krok 4: postup a uložení hotové receptury' },
+  go: { compose: 'Přejít na krok 1: Složení', calc: 'Přejít na krok 2: Kalkulace', alg: 'Přejít na krok 3: Alergeny a výživa', steps: 'Přejít na krok 4: Postup a výstup' },
+  scale: { '0.5': 'Poloviční dávka', '1': 'Základní dávka', '2': 'Dvojnásobná dávka', '3': 'Trojnásobná dávka' },
+  act: {
+    newrecipe: 'Založí prázdnou recepturu s jedním řádkem pro surovinu', open: 'Otevře recepturu', addrow: 'Přidá další řádek pro surovinu. Rychleji: v poli množství stiskni Enter', delrow: 'Odebere tento řádek ze složení',
+    applyform: 'Použije vypočtený násobek na tuto recepturu', copytsv: 'Zkopíruje kalkulaci jako tabulku. V Excelu ji vložíš do buňky A1 klávesou Ctrl+V', copytext: 'Zkopíruje recepturu jako text, hodí se do e-mailu nebo zprávy',
+    dup: 'Vytvoří kopii receptury, kterou můžeš upravit', delrecipe: 'Smaže celou recepturu. Je potřeba potvrdit druhým kliknutím', newing: 'Přidá vlastní surovinu, která není v katalogu', editing: 'Otevře surovinu k úpravě ceny a údajů',
+    backing: 'Zpět na ceník surovin', retdone: 'Uloží surovinu a vrátí tě do receptury', delIng: 'Smaže surovinu z ceníku. Jde to jen tehdy, když ji nepoužívá žádná receptura', addcat: 'Přidá surovinu z katalogu do tvého ceníku, cenu pak můžeš upravit',
+    fixprice: 'Otevře surovinu, kde chybějící údaj doplníš', copyjson: 'Zkopíruje celou zálohu dat jako text', import: 'Nahradí všechna současná data zálohou, kterou jsi vložil(a)', reset: 'Smaže všechno a vrátí ukázková data. Vyžaduje druhé kliknutí',
+    tour: 'Provede tě ukázkovou recepturou a vysvětlí, co je co. Trvá asi minutu', hidewelcome: 'Schová úvodní návod. Zobrazíš ho znovu dole na stránce', showwelcome: 'Zobrazí úvodní návod',
+  },
+  rf: {
+    name: 'Název receptury', cat: 'Skupina pro přehled, například cukroví, dorty nebo krémy', portions: 'Kolik kusů nebo porcí vznikne ze zadaných množství surovin (základní dávka)',
+    scale: 'Násobek dávky: 2 = dvojnásobek, 0,5 = polovina. Přepočítá suroviny, práci i výživu', laborMin: 'Kolik minut práce receptura zabere pro celou dávku', hourly: 'Hodinová sazba práce v Kč',
+    overheadPct: 'Režie jsou náklady na provoz: energie, nájem, mytí nádobí. Počítá se v % z přímých nákladů (materiál + práce)', marginPct: 'Marže je podíl zisku v ceně bez DPH. Marže 35 % znamená, že 35 % prodejní ceny je zisk',
+    vatPct: 'Sazba DPH. U potravin obvykle 12 %, u konzumace na místě 21 %. Ověř u učitelky nebo účetní', chosenPrice: 'Zadej cenu, za kterou opravdu prodáváš. Aplikace zpětně spočítá, jakou marži z ní máš',
+    finishedG: 'Váha hotového výrobku po upečení v gramech. Při pečení se voda odpaří, proto je menší než součet surovin. Podle ní se počítá výživa na 100 g', steps: 'Technologický postup, jeden krok na řádek',
+  },
+  if: { ingId: 'Vyber surovinu z ceníku. Chybí? Zvol „+ Nová surovina“', qty: 'Množství čisté suroviny pro základní dávku (g, ml nebo ks). Ztráty se dopočítají samy' },
+  gf: {
+    name: 'Název suroviny', base: 'V čem se surovina kupuje: kilogram, litr nebo kus', price: 'Cena za nákupní jednotku včetně DPH podle faktury nebo účtenky', pieceG: 'Kolik gramů váží jeden kus (například vejce M asi 50 g). Potřebné pro výživu',
+    yieldPct: 'Výtěžnost: kolik % suroviny se dá použít. Jahody bez stopek mají 93 %. Při méně než 100 % se musí dokoupit víc', kcal: 'Energie v kcal na 100 g podle obalu', fat: 'Tuky v gramech na 100 g', sat: 'Z toho nasycené mastné kyseliny v gramech na 100 g',
+    carb: 'Sacharidy v gramech na 100 g', sugar: 'Z toho cukry v gramech na 100 g', fiber: 'Vláknina v gramech na 100 g', prot: 'Bílkoviny v gramech na 100 g', salt: 'Sůl v gramech na 100 g (sodík krát 2,5)',
+  },
+  out: {
+    'sum-pricepp': 'Doporučená cena jednoho kusu včetně DPH, spočítaná z nákladů a marže', 'sum-costpp': 'Vlastní náklady na jeden kus včetně práce a režie', 'sum-material': 'Cena všech surovin pro celou dávku', 'sum-portions': 'Kolik kusů dávka dá',
+    'c-material': 'Cena všech surovin pro celou dávku včetně ztrát při zpracování', 'c-labor': 'Čas práce krát hodinová sazba', 'c-direct': 'Materiál plus práce', 'c-overhead': 'Režie v % z přímých nákladů', 'c-own': 'Přímé náklady plus režie. Tolik tě výroba opravdu stojí',
+    'c-profit': 'Zisk v korunách: cena bez DPH minus vlastní náklady', 'c-net': 'Cena, kterou dostaneš před odvodem DPH', 'c-vat': 'DPH, které odvedeš státu', 'c-gross': 'Cena celé dávky, kterou zaplatí zákazník včetně DPH',
+    'c-costpp': 'Vlastní náklady na jeden kus', 'c-pricepp': 'Prodejní cena jednoho kusu včetně DPH', 'c-suggest': 'Cena zaokrouhlená nahoru na celé koruny',
+    'n-kj': 'Energie v kilojoulech (1 kcal je 4,184 kJ)', 'n-kcal': 'Energie v kilokaloriích', 'n-fat': 'Tuky celkem', 'n-sat': 'Nasycené mastné kyseliny (součást tuků)', 'n-carb': 'Sacharidy celkem', 'n-sugar': 'Cukry (součást sacharidů)', 'n-fiber': 'Vláknina', 'n-prot': 'Bílkoviny', 'n-salt': 'Sůl',
+  },
+  id: { 'open-pal': 'Rychlé hledání: skočí na recepturu, surovinu nebo akci. Zkratka Ctrl+K', theme: 'Přepne světlý a tmavý vzhled', q: 'Hledá v tvém ceníku surovin', cq: 'Hledá v katalogu surovin', imp: 'Sem vlož text zálohy a klikni na Načíst' },
+  text: {
+    'hotová': 'Všechny body kontrolního seznamu jsou splněné', 'rozpracovaná': 'V kontrolním seznamu ještě něco chybí', 'ukázka': 'Ukázková receptura. Můžeš ji upravit, duplikovat nebo smazat',
+    'Surovina': 'Surovina z ceníku', 'Množství (netto)': 'Množství čisté suroviny, které jde do těsta. Ztráty se dopočítají samy', 'Cena': 'Cena této suroviny v receptuře včetně ztrát',
+    'na 100 g': 'Hodnoty na 100 g hotového výrobku, stejně jako na obalu', 'na 1 kus': 'Hodnoty pro jeden kus (porci)',
+  },
+  form: { shape: 'Tvar formy', fa: 'Rozměr původní formy v cm', fb: 'Druhý rozměr původní formy v cm', ta: 'Rozměr nové formy v cm', tb: 'Druhý rozměr nové formy v cm' },
+  conv: { v: 'Číslo, které chceš převést', u: 'Jednotka, ze které převádíš' },
+  vat: { p: 'Cena, ze které se počítá', with: 'Je zadaná cena s DPH, nebo bez?', rate: 'Sazba DPH' },
+};
+// vysvětlivky "i" u pojmů, které žáci znají nejmíň
+const INFO = [['yieldPct', 'gf'], ['finishedG', 'rf'], ['chosenPrice', 'rf'], ['overheadPct', 'rf'], ['marginPct', 'rf'], ['vatPct', 'rf'], ['scale', 'rf']];
+
+let tipEl, tipTarget = null, tipTimer, tipAt = 0;
+function ensureTip() { if (!tipEl) { tipEl = document.createElement('div'); tipEl.id = 'tip'; tipEl.className = 'tip'; tipEl.setAttribute('role', 'tooltip'); tipEl.hidden = true; document.body.appendChild(tipEl); } return tipEl; }
+function hideTip() { clearTimeout(tipTimer); if (tipEl) tipEl.hidden = true; if (tipTarget) tipTarget.removeAttribute('aria-describedby'); tipTarget = null; }
+function showTip(el) {
+  const t = el.dataset.tip; if (!t) return;
+  const box = ensureTip(); box.textContent = t; box.hidden = false; tipTarget = el; tipAt = Date.now(); el.setAttribute('aria-describedby', 'tip');
+  const r = el.getBoundingClientRect(), w = box.offsetWidth, h = box.offsetHeight;
+  const x = Math.max(8, Math.min(window.innerWidth - w - 8, r.left + r.width / 2 - w / 2));
+  let y = r.bottom + 10; if (y + h > window.innerHeight - 8) y = Math.max(8, r.top - h - 10);
+  box.style.left = x + 'px'; box.style.top = y + 'px';
+}
+document.addEventListener('mouseover', (e) => {
+  const el = e.target.closest?.('[data-tip]');
+  if (el === tipTarget) return;
+  hideTip();
+  if (el) tipTimer = setTimeout(() => showTip(el), 320);
+});
+document.addEventListener('mouseleave', hideTip);
+document.addEventListener('focusin', (e) => { const el = e.target.closest?.('[data-tip]'); hideTip(); if (el && !(el.matches('input,textarea') && el.matches(':not(.tipi)') && el.type === 'search')) showTip(el); });
+document.addEventListener('focusout', hideTip);
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' || (tipTarget && tipTarget.matches('input,textarea') && e.key.length === 1)) hideTip(); }, true);
+document.addEventListener('scroll', () => { if (tipEl && !tipEl.hidden && Date.now() - tipAt > 250) hideTip(); }, { passive: true, capture: true });
+document.addEventListener('click', (e) => {
+  const i = e.target.closest?.('.tipi');
+  if (i) { e.preventDefault(); e.stopPropagation(); hideTip(); showTip(i); return; } // focus už mohl tooltip otevřít, klik ho jen potvrdí
+  hideTip();
+}, true);
+
+function setTip(el, text) { if (el && text) el.dataset.tip = text; }
+function applyTips() {
+  const $$ = (sel) => document.querySelectorAll(sel);
+  $$('[data-act="tab"]').forEach((el) => setTip(el, TIPS.tab[el.dataset.v]));
+  $$('[data-act="sub"]').forEach((el) => setTip(el, TIPS.sub[el.dataset.v]));
+  $$('[data-act="go"]').forEach((el) => setTip(el, TIPS.go[el.dataset.v]));
+  $$('[data-act="scale"]').forEach((el) => setTip(el, TIPS.scale[el.dataset.v]));
+  $$('[data-act]').forEach((el) => { if (!el.dataset.tip) setTip(el, TIPS.act[el.dataset.act]); });
+  $$('.checks li button').forEach((el) => setTip(el, el.dataset.act ? 'Klikni a dostaneš se k místu, kde to opravíš' : 'Splněno'));
+  $$('[data-rf]').forEach((el) => setTip(el, TIPS.rf[el.dataset.rf]));
+  $$('[data-if]').forEach((el) => setTip(el, TIPS.if[el.dataset.if]));
+  $$('[data-gf]').forEach((el) => setTip(el, TIPS.gf[el.dataset.gf]));
+  $$('[data-form]').forEach((el) => setTip(el, TIPS.form[el.dataset.form]));
+  $$('[data-conv]').forEach((el) => setTip(el, TIPS.conv[el.dataset.conv]));
+  $$('[data-vat]').forEach((el) => setTip(el, TIPS.vat[el.dataset.vat]));
+  $$('summary').forEach((el) => setTip(el, 'Spočítá, kolikrát víc nebo míň těsta potřebuješ, když použiješ jinou velikost formy'));
+  $$('textarea[readonly]').forEach((el) => setTip(el, 'Celá záloha tvých dat. Zkopíruj ji tlačítkem pod polem'));
+  $$('[data-cat]').forEach((el) => setTip(el, 'Doplní údaje podle katalogu. Můžeš je potom upravit'));
+  $$('[data-chk]').forEach((el) => setTip(el.closest('label') || el, 'Zaškrtni, až hodnoty porovnáš s obalem konkrétního výrobku'));
+  for (const [id, t] of Object.entries(TIPS.id)) setTip(document.getElementById(id), t);
+  // řádky a bloky podle místa, kde se zobrazuje výpočet
+  $$('[data-out]').forEach((el) => {
+    const key = el.dataset.out, base = key.replace(/(100|pp)$/, '');
+    const t = TIPS.out[key] || TIPS.out[base];
+    if (!t) return;
+    setTip(el.closest('tr') || el.closest('.figure') || el.closest('.sumbar > div') || el, t);
+  });
+  $$('.pill, .heads span, .mini-table th, .sumbar small, .figure .lab').forEach((el) => setTip(el, TIPS.text[el.textContent.trim().toLowerCase()] || TIPS.text[el.textContent.trim()]));
+  $$('.alg .chip').forEach((el) => {
+    const n = +(el.querySelector('b')?.textContent || 0); if (!n) return;
+    setTip(el, `Alergen č. ${n}: ${ALLERGENS[n - 1][2]}. Například ${ALG_EX[n]}`);
+  });
+  $$('.rcard[data-act="open"]').forEach((el) => setTip(el, 'Otevře recepturu'));
+  // ikonky "i" u pojmů, které potřebují víc než jeden řádek
+  for (const [key, grp] of INFO) {
+    const input = document.querySelector(`[data-${grp}="${key}"]`); if (!input) continue;
+    const fld = input.closest('.field');
+    const label = fld ? fld.querySelector(':scope > span') : input.closest('.param') || input.previousElementSibling;
+    if (!label || label.querySelector('.tipi')) continue;
+    const i = document.createElement('button'); i.type = 'button'; i.className = 'tipi'; i.textContent = 'i'; i.setAttribute('aria-label', 'Vysvětlení pojmu'); i.dataset.tip = TIPS[grp][key];
+    label.appendChild(i);
+  }
+  $$('[title]').forEach((el) => { if (!el.dataset.tip) el.dataset.tip = el.title; el.removeAttribute('title'); });
+}
+
+// -------------------------------- události --------------------------------
+const app = $('#app');
+app.addEventListener('input', (e) => {
+  const t = e.target, r = curRecipe();
+  const val = () => (t.type === 'number' ? num(t.value, 0) : t.value);
+  if (t.dataset.rf && r) { r[t.dataset.rf] = t.tagName === 'SELECT' ? num(t.value) : val(); save(); refresh(); }
+  else if (t.dataset.if && r && t.dataset.if === 'qty') { r.items[+t.dataset.i].qty = val(); save(); refresh(); }
+  else if (t.dataset.gf) {
+    const i = data.ings.find((x) => x.id === ui.iid); if (!i || t.dataset.struct) return;
+    i[t.dataset.gf] = t.type === 'number' ? num(t.value, 0) : t.value; i.demo = false; save(); markNeeds();
+  }
+  else if (t.id === 'q') { ui.q = t.value; const pos = t.selectionStart; render(); const q = $('#q'); q.focus(); try { q.setSelectionRange(pos, pos); } catch (err) { /* typ search */ } }
+  else if (t.dataset.form) {
+    const k = t.dataset.form;
+    if (k === 'fa') ui.form.f.a = num(t.value); if (k === 'fb') ui.form.f.b = num(t.value); if (k === 'ta') ui.form.t.a = num(t.value); if (k === 'tb') ui.form.t.b = num(t.value);
+    refresh();
+  }
+  else if (t.dataset.conv) { ui.conv[t.dataset.conv] = t.dataset.conv === 'v' ? num(t.value) : t.value; refresh(); }
+  else if (t.dataset.vat && t.type === 'number') { ui.vat.p = num(t.value); refresh(); }
+  else if (t.id === 'imp') { ui.imp = t.value; }
+  else if (t.id === 'cq') { ui.cq = t.value; const pos = t.selectionStart; render(); const q = $('#cq'); q.focus(); try { q.setSelectionRange(pos, pos); } catch (err) { /* typ search */ } }
+});
+app.addEventListener('change', (e) => {
+  const t = e.target, r = curRecipe();
+  if (t.dataset.if === 'ingId' && r && t.value === '__new__') {
+    const n = { id: uid(), name: 'Nová surovina', base: 'kg', price: 0, pieceG: 0, yieldPct: 100, allergens: [], kcal: 0, prot: 0, carb: 0, sugar: 0, fat: 0 };
+    data.ings.push(n); ui.ret = { rid: r.id, i: +t.dataset.i }; ui.tab = 'ings'; ui.iid = n.id; save(); render(); window.scrollTo({ top: 0 });
+    const nm = document.querySelector('[data-gf="name"]'); if (nm) { nm.focus(); nm.select(); }
+  }
+  else if (t.dataset.if === 'ingId' && r) { r.items[+t.dataset.i].ingId = t.value; save(); render(); focusQty(+t.dataset.i); }
+  else if (t.dataset.rf === 'vatPct' || t.dataset.rf === 'chosenPrice') { refresh(); }
+  else if (t.dataset.gf === 'base') { const i = data.ings.find((x) => x.id === ui.iid); if (i) { i.base = t.value; i.demo = false; save(); render(); } }
+  else if (t.dataset.cat) {
+    const i = data.ings.find((x) => x.id === ui.iid), c = CATALOG[+t.value]; if (!i || !c) return;
+    const keep = { id: i.id }; Object.assign(i, JSON.parse(JSON.stringify(c)), keep); delete i.group; i.check = false; i.demo = false; save(); render();
+  }
+  else if (t.dataset.chk) { const i = data.ings.find((x) => x.id === ui.iid); if (i) { i.check = t.checked; save(); t.closest('.chip').classList.toggle('on', t.checked); } }
+  else if (t.dataset.alg) {
+    const i = data.ings.find((x) => x.id === ui.iid); if (!i) return;
+    const n = +t.dataset.alg, set = new Set(i.allergens || []);
+    t.checked ? set.add(n) : set.delete(n); i.allergens = [...set].sort((a, b) => a - b); i.demo = false; save();
+    t.closest('.chip').classList.toggle('on', t.checked);
+  }
+  else if (t.dataset.form === 'shape') { ui.form.shape = t.value; render(); }
+  else if (t.dataset.vat && t.tagName === 'SELECT') { ui.vat[t.dataset.vat] = t.dataset.vat === 'with' ? t.value === '1' : num(t.value); refresh(); }
+  else if (t.dataset.rf === 'name' || t.dataset.rf === 'cat' || t.dataset.rf === 'portions' || t.dataset.rf === 'scale') { render(); }
+});
+function focusRow(i) { const el = document.querySelector(`select[data-i="${i}"]`); if (el) el.focus(); }
+function focusQty(i) { const el = document.querySelector(`input[data-if="qty"][data-i="${i}"]`); if (el) { el.focus(); el.select(); } }
+// klávesnice: Enter v množství skočí na další řádek, na posledním řádku založí nový
+app.addEventListener('keydown', (e) => {
+  const t = e.target, r = curRecipe();
+  if (e.key !== 'Enter' || t.dataset.if !== 'qty' || !r) return;
+  e.preventDefault();
+  const i = +t.dataset.i;
+  if (i >= r.items.length - 1) { r.items.push({ id: uid(), ingId: '', qty: 0 }); save(); render(); focusRow(i + 1); } else focusRow(i + 1);
+});
+document.addEventListener('keydown', (e) => {
+  if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === 'z' && ui.undo && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName || '')) { e.preventDefault(); doUndo(); }
+});
+document.addEventListener('click', (e) => {
+  const tb = e.target.closest('[data-tour]');
+  if (tb) { const k = tb.dataset.tour; if (k === 'next') showTourStep(tour.i + 1); else if (k === 'prev') showTourStep(tour.i - 1); else endTour(); return; }
+  const cl = e.target.closest('[data-close]'); if (cl && e.target === cl) { closeModal(); return; }
+  const pl = e.target.closest('[data-pal]'); if (pl) { runPal(+pl.dataset.pal); return; }
+  const b = e.target.closest('[data-act]'); if (!b) return;
+  const a = b.dataset.act, v = b.dataset.v, r = curRecipe();
+  const disarm = (keep) => { if (ui.armed && ui.armed !== keep) ui.armed = null; };
+  disarm(a === 'delrecipe' ? 'delrecipe' : a === 'delIng' ? 'delIng' : a === 'reset' ? 'reset' : null);
+  if (a === 'tab') { ui.tab = v; ui.armed = null; ui.iid = null; ui.ret = null; render(); window.scrollTo({ top: 0 }); }
+  else if (a === 'go') {
+    if (window.matchMedia('(max-width: 1199px)').matches) { ui.sub = v; render(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+    else document.querySelector(`[data-sec="${v}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+  else if (a === 'fixprice' && r) {
+    const id = b.dataset.ing || r.items.map((it) => it.ingId).find((x) => { const g = data.ings.find((i) => i.id === x); return g && !(num(g.price) > 0); });
+    if (id) { ui.ret = { rid: r.id }; ui.tab = 'ings'; ui.iid = id; render(); window.scrollTo({ top: 0 }); }
+  }
+  else if (a === 'retdone') {
+    const rr = ui.ret && data.recipes.find((x) => x.id === ui.ret.rid);
+    const row = ui.ret?.i;
+    if (rr && row !== undefined && rr.items[row] && ui.iid) rr.items[row].ingId = ui.iid;
+    ui.tab = 'recipes'; if (rr) ui.rid = rr.id; ui.sub = 'compose'; ui.ret = null; ui.iid = null; save(); render();
+    if (row !== undefined) focusQty(row);
+  }
+  else if (a === 'addcat') {
+    const c = CATALOG[+v]; if (!c || data.ings.some((x) => x.name === c.name)) return;
+    const n = { id: uid(), ...JSON.parse(JSON.stringify(c)), check: false }; delete n.group; data.ings.push(n); save(); render(); toast(`Přidáno: ${c.name}`);
+  }
+  else if (a === 'undo') doUndo();
+  else if (a === 'tour') startTour();
+  else if (a === 'hidewelcome') { data.hideWelcome = true; save(); render(); }
+  else if (a === 'showwelcome') { data.hideWelcome = false; save(); render(); }
+  else if (a === 'open') { ui.rid = v; ui.sub = 'compose'; ui.armed = null; render(); }
+  else if (a === 'sub') { ui.sub = v; render(); }
+  else if (a === 'newrecipe') { const n = { id: uid(), name: 'Nová receptura', cat: '', portions: 10, finishedG: 0, laborMin: 30, scale: 1, hourly: 220, overheadPct: 30, marginPct: 35, vatPct: 12, chosenPrice: 0, steps: '', items: [{ id: uid(), ingId: '', qty: 0 }] }; data.recipes.unshift(n); ui.rid = n.id; ui.sub = 'compose'; save(); render(); const t = document.querySelector('input.title'); if (t) { t.focus(); t.select(); } }
+  else if (a === 'addrow' && r) { r.items.push({ id: uid(), ingId: '', qty: 0 }); save(); render(); focusRow(r.items.length - 1); }
+  else if (a === 'delrow' && r) { snap(); r.items.splice(+b.dataset.i, 1); save(); render(); toast('Řádek odebrán', true); }
+  else if (a === 'scale' && r) { r.scale = num(v, 1); save(); render(); }
+  else if (a === 'applyform' && r) { const f = formFactor(ui.form.shape, ui.form.f, ui.form.t); if (f) { r.scale = Math.round(f * 1000) / 1000; save(); render(); toast('Násobek nastaven'); } }
+  else if (a === 'dup' && r) { const c = JSON.parse(JSON.stringify(r)); c.id = uid(); c.name = r.name + ' (kopie)'; c.demo = false; c.items.forEach((x) => (x.id = uid())); data.recipes.unshift(c); ui.rid = c.id; ui.sub = 'compose'; save(); render(); toast('Zduplikováno'); }
+  else if (a === 'delrecipe' && r) {
+    if (ui.armed !== 'delrecipe') { ui.armed = 'delrecipe'; render(); return; }
+    snap(); data.recipes = data.recipes.filter((x) => x.id !== r.id); ui.rid = data.recipes[0]?.id ?? null; ui.armed = null; save(); render(); toast('Receptura smazána', true);
+  }
+  else if (a === 'copytsv' && r) copy(recipeTsv(r), 'Zkopírováno, vlož do Excelu');
+  else if (a === 'copytext' && r) copy(recipeText(r));
+  else if (a === 'newing') { const n = { id: uid(), name: 'Nová surovina', base: 'kg', price: 0, pieceG: 0, yieldPct: 100, allergens: [], kcal: 0, prot: 0, carb: 0, sugar: 0, fat: 0 }; data.ings.push(n); ui.iid = n.id; save(); render(); }
+  else if (a === 'editing') { ui.iid = v; render(); window.scrollTo({ top: 0 }); }
+  else if (a === 'backing') { ui.iid = null; ui.armed = null; ui.ret = null; render(); }
+  else if (a === 'delIng') {
+    if (ui.armed !== 'delIng') { ui.armed = 'delIng'; render(); return; }
+    snap(); data.ings = data.ings.filter((x) => x.id !== ui.iid); ui.iid = null; ui.armed = null; save(); render(); toast('Surovina smazána', true);
+  }
+  else if (a === 'copyjson') copy(JSON.stringify(data), 'Záloha zkopírována');
+  else if (a === 'import') {
+    try {
+      const d = JSON.parse(ui.imp);
+      if (!d || !Array.isArray(d.ings) || !Array.isArray(d.recipes)) throw new Error('chybí suroviny nebo receptury');
+      snap(); data = d; ui.rid = d.recipes[0]?.id ?? null; ui.iid = null; save(); ui.imp = ''; toast('Data načtena', true); ui.tab = 'recipes'; render();
+    } catch (err) { setOut('imp-msg', 'Tohle nevypadá jako záloha: ' + err.message); }
+  }
+  else if (a === 'reset') {
+    if (ui.armed !== 'reset') { ui.armed = 'reset'; render(); return; }
+    snap(); data = seedData(); ui.rid = data.recipes[0].id; ui.iid = null; ui.armed = null; save(); ui.tab = 'recipes'; render(); toast('Ukázková data obnovena', true);
+  }
+});
+const THEME_KEY = 'cukrarsky-sesit-theme';
+try { const saved = localStorage.getItem(THEME_KEY); if (saved) document.documentElement.setAttribute('data-theme', saved); } catch (e) { /* bez úložiště se řídí systémem */ }
+$('#theme').addEventListener('click', () => {
+  const cur = document.documentElement.getAttribute('data-theme') || (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+  const next = cur === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  try { localStorage.setItem(THEME_KEY, next); } catch (e) { /* jen pro tuto návštěvu */ }
+});
+render();
+</script>
+</body>
+</html>

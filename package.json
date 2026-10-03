@@ -1,0 +1,10 @@
+{
+  "name": "cukrarsky-sesit",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Receptury, kalkulace ceny, alergeny a výživa pro cukráře",
+  "scripts": {
+    "test": "node --test",
+    "start": "node -e \"require('http').createServer((q,r)=>r.end(require('fs').readFileSync('index.html'))).listen(5173,()=>console.log('http://localhost:5173'))\""
+  }
+}
